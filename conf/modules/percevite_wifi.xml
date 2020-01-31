@@ -9,8 +9,14 @@
   </header>
   <init fun="uart_esp_init()"/>
   <periodic fun="uart_esp_loop()" freq="2" autorun="TRUE"/>
+  <event fun="esp_event_uart_rx()"/>
   <makefile>
     <file name="percevite_wifi.c"/>
+    <configure name="ESP_UART_PORT" default="uart2" case="upper|lower"/>
+    <configure name="ESP_UART_BAUD" default="B115200"/>
+    <define name="ESP_UART_PORT" value="$(ESP_UART_PORT_LOWER)"/>
+    <define name="USE_$(ESP_UART_PORT_UPPER)"/>
+    <define name="$(ESP_UART_PORT_UPPER)_BAUD" value="$(ESP_UART_BAUD)"/>
   </makefile>
 </module>
 
