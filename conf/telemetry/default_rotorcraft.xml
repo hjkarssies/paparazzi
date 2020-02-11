@@ -37,9 +37,9 @@
       <message name="INS_EKF2"                 period=".25"/>
     </mode>
 
-    <mode name="percevite">
+    <!--mode name="percevite">
       <message name="PERCEVITE_WIFI"           period="0.5"/>
-    </mode>
+    </mode-->
 
     <mode name="ppm">
       <message name="DL_VALUE"                 period="0.5"/>

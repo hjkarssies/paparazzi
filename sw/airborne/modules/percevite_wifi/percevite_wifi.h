@@ -26,65 +26,68 @@
 #ifndef PERCEVITE_WIFI_H
 #define PERCEVITE_WIFI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "mcu_periph/uart.h"
 
 #define ESP_UART_PORT uart2
 
 // Enter ID for drone number (0/1)
-#define SELF_ID 1
+#define SELF_ID 3
 
 #define ESP_MAX_LEN 50 // lat,long,alt,bearing = 51 bytes max (28 currently)
-#define MAX_DRONES 2   // maximum drones in ESP32's range
+#define MAX_DRONES 5   // maximum drones in ESP32's range
 
-// NULL terminate default str
-// char array for sending drone lat_long_alt_bearing
-// char rx_buf_str[MAX_DRONES][ESP_MAX_LEN] = {'0'};
-
-// generic JEVOIS message structure
-struct esp_msg_t {
-  uint8_t type;
-  uint8_t id;
-  char str[ESP_MAX_LEN];
-};
+typedef enum {
+  ACK_FRAME = 0,
+  DATA_FRAME
+} frame_type_t;
 
 // decoder state
-enum esp_state {
+typedef enum {
   ESP_SYNC = 0,
-  ESP_ID,
-  ESP_RX_MSG,
+  ESP_DRONE_INFO,
+  ESP_DRONE_DATA,
+  ESP_ERR_CHK,
   ESP_RX_OK,
   ESP_RX_ERR
-};
+} esp_state_t;
 
-struct drone_status_t {
-  float north;
-  float east;
-  float down;
+typedef struct __attribute__((packed)) {
+  float x;
+  float y;
+  float z;
+} vec3f_t;
+
+typedef struct __attribute__((packed)) {
+  vec3f_t pos;
   float heading;
+  vec3f_t vel;
+} drone_data_t;
 
-  // reserve mid-bytes
-  char north_str[7];
-  char east_str[7];
-  char down_str[7];
-  char heading_str[7];
-};
+typedef struct __attribute__((packed)) {
+  uint8_t drone_id;
+  uint8_t packet_type;
+  uint8_t packet_length;
+} drone_info_t;
 
-struct drone_status_t drone_status[MAX_DRONES];
+// encapsulated in $ and * 
+typedef struct __attribute__((packed)){
+  drone_info_t info; 
+  drone_data_t data;
+} uart_packet_t;
 
-// similar to jevois struct
-struct esp_t {
-  enum esp_state state; // decoder state
-  char buf[ESP_MAX_LEN]; // temp buffer
-  uint8_t idx; // temp buffer index
-  struct esp_msg_t msg; // last decoded message
-  bool data_available; // new data to report
-};
-
-struct esp_t esp;
+// struct drone_status_t drone_status[MAX_DRONES];
 
 extern void esp_event_uart_rx(void);
 extern void uart_esp_init(void);
 extern void uart_esp_loop(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif
 
