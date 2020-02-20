@@ -20,7 +20,7 @@
 /**
  * @file "modules/percevite_wifi/percevite_wifi.h"
  * @author nilay
- * wifi ssid broadcast
+ * wifi ssid broadcast TODO: extend
  */
 
 #ifndef PERCEVITE_WIFI_H
@@ -35,10 +35,10 @@ extern "C" {
 #define ESP_UART_PORT uart2
 
 // Enter ID for drone number (0/1)
-#define SELF_ID 3
+#define SELF_ID 3 // TODO: instead use AC_ID
 
 #define ESP_MAX_LEN 50 // lat,long,alt,bearing = 51 bytes max (28 currently)
-#define MAX_DRONES 5   // maximum drones in ESP32's range
+#define MAX_DRONES 5   // TODO: avoid malloc, depend on MAX AC_ID maximum drones in ESP32's range
 
 typedef enum {
   ACK_FRAME = 0,
@@ -50,7 +50,7 @@ typedef enum {
   ESP_SYNC = 0,
   ESP_DRONE_INFO,
   ESP_DRONE_DATA,
-  ESP_ERR_CHK,
+  ESP_ERR_CHK,  // TODO: shift to crc
   ESP_RX_OK,
   ESP_RX_ERR
 } esp_state_t;

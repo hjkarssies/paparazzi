@@ -1,0 +1,14 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+<module name="percevite_vo" dir="percevite_vo">
+  <doc>
+    <description>Percevite's Velocity Obsctacle for GPS and avoid</description>
+  </doc>
+  <header>
+    <file name="percevite_vo.h"/>
+  </header>
+  <init fun="vo_init()"/>
+  <periodic fun="vo_evade()" freq="1.0" autorun="TRUE"/>
+  <makefile>
+    <file name="percevite_vo.c"/>
+  </makefile>
+</module>
