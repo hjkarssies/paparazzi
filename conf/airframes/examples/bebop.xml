@@ -31,6 +31,7 @@
     </module>
 
     <module name="percevite_wifi"/>
+    <module name="percevite_vo"/>	
       <!--configure name="MODEM_PORT" value="UART2"/>
       <configure name="MODEM_BAUD" value="B115200"/-->
     <!--/module-->
