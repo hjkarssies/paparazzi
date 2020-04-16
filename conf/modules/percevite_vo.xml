@@ -7,7 +7,7 @@
     <file name="percevite_vo.h"/>
   </header>
   <init fun="vo_init()"/>
-  <periodic fun="vo_evade()" freq="1.0" autorun="TRUE"/>
+  <periodic fun="vo_periodic()" freq="10.0" autorun="TRUE"/>
   <makefile>
     <file name="percevite_vo.c"/>
   </makefile>

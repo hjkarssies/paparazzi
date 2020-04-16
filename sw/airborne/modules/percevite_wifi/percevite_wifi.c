@@ -34,10 +34,17 @@
 #include <string.h>
 
 #include "modules/percevite_wifi/percevite_wifi.h"
+#include "modules/percevite_vo/percevite_vo.h"
 #include "subsystems/datalink/telemetry.h"
 #include "state.h"
 
+#include "mcu_periph/sys_time.h"
+
 // #define DBG
+
+// FILE *rx_file;
+// FILE *tx_file;
+FILE *drone_data_f;
 
 drone_data_t dr_data[MAX_DRONES];
 uint8_t esp_state = ESP_SYNC;
@@ -288,8 +295,13 @@ static void clear_drone_status(void) {
 	}
 }
 
+robot_t robot1;
+robot_t robot2;
+
 // init: uart esp32 bbp
 void uart_esp_init() {
+
+	drone_data_f = fopen("drone_data.csv", "w+");
 	
 	/* reset receive buffer state machine */
 	esp_state = ESP_SYNC;
@@ -299,12 +311,27 @@ void uart_esp_init() {
 
 	clear_drone_status();
 
-	printf("sizeof(uart_packet_t) = %d\n", sizeof(uart_packet_t));
-	printf("sizeof(drone_data_t) = %d\n", sizeof(drone_data_t));
-	printf("sizeof(drone_info_t) = %d\n", sizeof(drone_info_t));
+	// percevite_vo init code here
+  robot1.pos[0] = -7.0;
+  robot1.pos[1] = 0.0;
+  robot1.vel = 0.4;
+  robot1.head = (D2R) * 45.0;
+  robot1.oldvel = 0.4;
+  robot1.oldhead = (D2R) * 45.0;
+
+  robot2.pos[0] = 7.0;
+  robot2.pos[1] = 0.0;
+  robot2.vel = 0.4;
+  robot2.head = (D2R) * 135.0;
+  robot2.oldvel = 0.4;
+  robot2.oldhead = (D2R) * 135.0;
+
+	// printf("sizeof(uart_packet_t) = %d\n", sizeof(uart_packet_t));
+	// printf("sizeof(drone_data_t) = %d\n", sizeof(drone_data_t));
+	// printf("sizeof(drone_info_t) = %d\n", sizeof(drone_info_t));
 }
 
-// frequency: twice every second
+// change ssid ten times every second
 void uart_esp_loop() {
 
 	// TODO: send these over instead of hardcoded
@@ -312,9 +339,15 @@ void uart_esp_loop() {
 	struct NedCoor_f *optivel = stateGetSpeedNed_f();
 	struct FloatEulers *att = stateGetNedToBodyEulers_f();
 
-	static float ctr_trm = 1.4;
+	dr_data[SELF_ID].pos.x   = optipos->x;
+	dr_data[SELF_ID].pos.y   = optipos->y;
+	dr_data[SELF_ID].pos.z   = optipos->z;
+	dr_data[SELF_ID].heading = att->psi;
+	dr_data[SELF_ID].vel.x   = optivel->x;
+	dr_data[SELF_ID].vel.y   = optivel->y;
+	dr_data[SELF_ID].vel.z   = optivel->z;
 
-	uart_packet_t uart_packet = {
+	uart_packet_t uart_packet_tx = {
 		.info = {
 			.drone_id = SELF_ID,
 			.packet_type = DATA_FRAME,
@@ -322,29 +355,49 @@ void uart_esp_loop() {
 		},
 		.data = {
 			.pos = {
-				.x = -1.53,
-				.y = -346.234,
-				.z = 23455.234,
+				.x = dr_data[SELF_ID].pos.x,
+				.y = dr_data[SELF_ID].pos.y,
+				.z = dr_data[SELF_ID].pos.z,
 			},
-			.heading = -452.12,
+			.heading = dr_data[SELF_ID].heading,
 			.vel = {
-				.x = -1.53,
-				.y = -346.234,
-				.z = 23455.234,
+				.x = dr_data[SELF_ID].vel.x,
+				.y = dr_data[SELF_ID].vel.y,
+				.z = dr_data[SELF_ID].vel.z,
 			},
 		},
 	};
 
-	uart_packet.data.pos.x = ctr_trm;
+	tx_struct(&uart_packet_tx);
 
-	tx_struct(&uart_packet);
+	// TODO: send to percevite_vo struct
+	// robot1.pos[0] = -7.0;
+	// robot1.pos[1] = 0.0;
+	// robot1.vel = 0.4;
+	// robot1.head = (D2R) * 45.0;
+	// robot1.oldvel = 0.4;
+	// robot1.oldhead = (D2R) * 45.0;
+	
 
-	ctr_trm = ctr_trm + 1;
+	// robot2.pos[0] = 7.0;
+  // robot2.pos[1] = 0.0;
+  // robot2.vel = 0.4;
+  // robot2.head = (D2R) * 135.0;
+  // robot2.oldvel = 0.4;
+  // robot2.oldhead = (D2R) * 135.0;
+
+	// LOG: MAXDRONES for me = 2 (ID 1 and 2 start from i = 1):(
+	for (int id = 1; id < 3; id++) {
+		fprintf(drone_data_f, "%f,%f,%f,", dr_data[id].pos.x, dr_data[id].pos.y, dr_data[id].pos.z);
+		fprintf(drone_data_f, "%f,", dr_data[id].heading);
+		fprintf(drone_data_f, "%f,%f,%f,", dr_data[id].vel.x, dr_data[id].vel.y, dr_data[id].vel.z);
+	}
+	fprintf(drone_data_f, "%f\n", get_sys_time_float());
 
 	// mutex, don't tx to esp when ack is being sent
   // if (esp.state!= ESP_RX_OK) {
 		
-	//}	
+	//}
 
 }
 

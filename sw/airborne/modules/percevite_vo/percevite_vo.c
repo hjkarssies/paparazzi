@@ -26,8 +26,7 @@
 #include "math/pprz_algebra_float.h"
 #include <stdio.h>
 
-robot_t robot1;
-robot_t robot2;
+FILE *vo_f;
 
 void polar2cart(float mag, float directn, float *cart) {
   cart[0] = mag * cosf(directn);
@@ -56,20 +55,21 @@ void calc_proj_matrix(const float *a, const float *b, float **c) {
 }
 
 void vo_init(void) {
-  // your init code here
-  robot1.pos[0] = -7.0;
-  robot1.pos[1] = 0.0;
-  robot1.vel = 0.4;
-  robot1.head = (D2R) * 45.0;
-  robot1.oldvel = 0.4;
-  robot1.oldhead = (D2R) * 45.0;
+  // // your init code here
+  // robot1.pos[0] = -7.0;
+  // robot1.pos[1] = 0.0;
+  // robot1.vel = 0.4;
+  // robot1.head = (D2R) * 45.0;
+  // robot1.oldvel = 0.4;
+  // robot1.oldhead = (D2R) * 45.0;
 
-  robot2.pos[0] = 7.0;
-  robot2.pos[1] = 0.0;
-  robot2.vel = 0.4;
-  robot2.head = (D2R) * 135.0;
-  robot2.oldvel = 0.4;
-  robot2.oldhead = (D2R) * 135.0;
+  // robot2.pos[0] = 7.0;
+  // robot2.pos[1] = 0.0;
+  // robot2.vel = 0.4;
+  // robot2.head = (D2R) * 135.0;
+  // robot2.oldvel = 0.4;
+  // robot2.oldhead = (D2R) * 135.0;
+  vo_f = fopen("vo.csv", "w+");
 }
 
 void vo_resolve_by_project(robot_t robot_a, float angle1, float angle2, float *centre, float *new_vela) {
@@ -171,13 +171,7 @@ void detect(void) {
   float centre[2];
   centre[0] = robot1.pos[0] + robot2_offset[0]; 
   centre[1] = robot1.pos[1] + robot2_offset[1];
-
-  // float pt1[2] = centre;
-  // struct FloatVect2 pt2 = {centre[0] + (MAX_VEL * np.cos(angleb1)), centre[1] + (MAX_VEL * np.sin(angleb1))};
-  // struct FloatVect2 pt3 = {centre[0] + (MAX_VEL * np.cos(angleb2)), centre[1] + (MAX_VEL * np.sin(angleb2))};
-
-  // struct FloatVect2 oldvel = robot1.pos + polar2cart(robot1.vel, robot1.head);
-
+  
   if ((tcpa > 0) && (dcpa < RR)) {
     float newvel_cart[2];
     vo_resolve_by_project(robot1, angleb1, angleb2, centre, newvel_cart);
@@ -193,11 +187,8 @@ void detect(void) {
 
 }
 
-
-void vo_evade(void) {
-  // your periodic code here.
-  // freq = 1.0 Hz
-  float del[2] = {0.0, 0.0};
+void vo_simulate_loop(void) {
+  float del[2];
   polar2cart(robot1.vel, robot1.head, del);
   robot1.pos[0] += del[0];
   robot1.pos[1] += del[1];
@@ -205,7 +196,16 @@ void vo_evade(void) {
   polar2cart(robot2.vel, robot2.head, del);
   robot2.pos[0] += del[0];
   robot2.pos[1] += del[1];
-  
+
+  fprintf(vo_f, "%f,%f,%f,%f,%f,%f,%f,%f\n", 
+            robot1.pos[0], robot1.pos[1], robot1.vel, robot1.head,
+            robot2.pos[0], robot2.pos[1], robot2.vel, robot2.head);
+
+}
+
+void vo_periodic(void) {
+  // your periodic code here.
+  // freq = 10.0 Hz
+  vo_simulate_loop();
   detect();
-  printf("%f, %f, %f, %f\n", robot1.pos[0], robot1.pos[1], robot2.pos[0], robot2.pos[1]);
 }

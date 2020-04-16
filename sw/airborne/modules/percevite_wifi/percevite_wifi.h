@@ -34,8 +34,8 @@ extern "C" {
 
 #define ESP_UART_PORT uart2
 
-// Enter ID for drone number (0/1)
-#define SELF_ID 3 // TODO: instead use AC_ID
+// Enter ID for drone number (1/2)
+#define SELF_ID 2 // TODO: instead use AC_ID
 
 #define ESP_MAX_LEN 50 // lat,long,alt,bearing = 51 bytes max (28 currently)
 #define MAX_DRONES 5   // TODO: avoid malloc, depend on MAX AC_ID maximum drones in ESP32's range
@@ -84,6 +84,7 @@ typedef struct __attribute__((packed)){
 extern void esp_event_uart_rx(void);
 extern void uart_esp_init(void);
 extern void uart_esp_loop(void);
+// extern void vo_simulate_loop(void);
 
 #ifdef __cplusplus
 } /* extern "C" */
