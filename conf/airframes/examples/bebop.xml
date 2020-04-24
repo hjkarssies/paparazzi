@@ -32,12 +32,9 @@
 
     <module name="percevite_wifi"/>
     <module name="percevite_vo"/>	
-      <!--configure name="MODEM_PORT" value="UART2"/>
-      <configure name="MODEM_BAUD" value="B115200"/-->
+    <!--configure name="MODEM_PORT" value="UART2"/>
+    <configure name="MODEM_BAUD" value="B115200"/-->
     <!--/module-->
-    
-    <!-- This worked for UART2 port2, FTDI -->
-    <!--module name="switch_uart"/-->
 
     <!--module name="bebop_cam"/-->
 
@@ -94,12 +91,12 @@
 
   <section name="IMU" prefix="IMU_">
     <!-- Magneto calibration -->
-    <define name="MAG_X_NEUTRAL" value="18"/>
-    <define name="MAG_Y_NEUTRAL" value="157"/>
-    <define name="MAG_Z_NEUTRAL" value="49"/>
-    <define name="MAG_X_SENS" value="10.5007722373" integer="16"/>
-    <define name="MAG_Y_SENS" value="11.1147400462" integer="16"/>
-    <define name="MAG_Z_SENS" value="11.6479371722" integer="16"/>
+    <define name="MAG_X_NEUTRAL" value="46"/>
+    <define name="MAG_Y_NEUTRAL" value="-788"/>
+    <define name="MAG_Z_NEUTRAL" value="593"/>
+    <define name="MAG_X_SENS" value="8.058735810164688" integer="16"/>
+    <define name="MAG_Y_SENS" value="8.26685168082328" integer="16"/>
+    <define name="MAG_Z_SENS" value="8.811004184981885" integer="16"/>
 
     <!-- Magneto current calibration -->
     <define name="MAG_X_CURRENT_COEF" value="0.0"/>

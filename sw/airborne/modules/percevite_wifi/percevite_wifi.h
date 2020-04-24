@@ -37,8 +37,8 @@ extern "C" {
 // Enter ID for drone number (1/2)
 #define SELF_ID 2 // TODO: instead use AC_ID
 
-#define ESP_MAX_LEN 50 // lat,long,alt,bearing = 51 bytes max (28 currently)
-#define MAX_DRONES 5   // TODO: avoid malloc, depend on MAX AC_ID maximum drones in ESP32's range
+#define ESP_MAX_LEN 50
+#define MAX_DRONES 5  
 
 typedef enum {
   ACK_FRAME = 0,
@@ -58,13 +58,12 @@ typedef enum {
 typedef struct __attribute__((packed)) {
   float x;
   float y;
-  float z;
-} vec3f_t;
+} vec2f_t;
 
 typedef struct __attribute__((packed)) {
-  vec3f_t pos;
+  vec2f_t pos;
   float heading;
-  vec3f_t vel;
+  float vel;
 } drone_data_t;
 
 typedef struct __attribute__((packed)) {
@@ -78,8 +77,6 @@ typedef struct __attribute__((packed)){
   drone_info_t info; 
   drone_data_t data;
 } uart_packet_t;
-
-// struct drone_status_t drone_status[MAX_DRONES];
 
 extern void esp_event_uart_rx(void);
 extern void uart_esp_init(void);

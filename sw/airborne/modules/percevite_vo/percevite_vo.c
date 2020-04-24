@@ -189,9 +189,9 @@ void detect(void) {
 
 void vo_simulate_loop(void) {
   float del[2];
-  polar2cart(robot1.vel, robot1.head, del);
-  robot1.pos[0] += del[0];
-  robot1.pos[1] += del[1];
+  // polar2cart(robot1.vel, robot1.head, del);
+  // robot1.pos[0] += del[0];
+  // robot1.pos[1] += del[1];
 
   polar2cart(robot2.vel, robot2.head, del);
   robot2.pos[0] += del[0];
