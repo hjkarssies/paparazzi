@@ -103,6 +103,10 @@ static void print_drone_struct(uart_packet_t *uart_packet_rx) {
 					uart_packet_rx->info.drone_id,
 					uart_packet_rx->data.pos.x, uart_packet_rx->data.pos.y,
 					uart_packet_rx->data.vel, uart_packet_rx->data.heading);
+	robot2.pos[0] = uart_packet_rx->data.pos.x;
+	robot2.pos[1] = uart_packet_rx->data.pos.y;
+	robot2.vel = uart_packet_rx->data.vel;
+	robot2.head = uart_packet_rx->data.heading;
 }
 
 uint8_t databuf[ESP_MAX_LEN] = {0};
@@ -279,8 +283,8 @@ static void clear_drone_status(void) {
 		// initialize at tropical waters of eastern Altanic ocean, facing the artic
 		dr_data[id].pos.x   = 0.0;
 		dr_data[id].pos.y   = 0.0;
-		dr_data[id].heading = 0.0;
 		dr_data[id].vel     = 0.0;
+		dr_data[id].heading = 0.0;
 	}
 }
 
@@ -307,15 +311,15 @@ void uart_esp_init() {
 	// stateSetLocalOrigin_i(&ltp_def);
 
 	// percevite_vo init code here
-  robot1.pos[0] = -7.0;
-  robot1.pos[1] = 0.0;
+  robot1.pos[0] = -30.0;
+  robot1.pos[1] = -30.0;
   robot1.vel = 0.4;
   robot1.head = (D2R) * 45.0;
   robot1.oldvel = 0.4;
   robot1.oldhead = (D2R) * 45.0;
 
-  robot2.pos[0] = 7.0;
-  robot2.pos[1] = 0.0;
+  robot2.pos[0] = 30.0;
+  robot2.pos[1] = -30.0;
   robot2.vel = 0.4;
   robot2.head = (D2R) * 135.0;
   robot2.oldvel = 0.4;
@@ -342,10 +346,10 @@ void uart_esp_loop() {
 		float gpsvel = stateGetHorizontalSpeedNorm_f();
 		struct FloatEulers *att = stateGetNedToBodyEulers_f();
 
-		dr_data[SELF_ID].pos.x   = robot2.pos[0]; //gpspos->x;
-		dr_data[SELF_ID].pos.y   = robot2.pos[1]; //gpspos->y;
-		dr_data[SELF_ID].heading = robot2.head;   //att->psi;
-		dr_data[SELF_ID].vel     = robot2.vel;    //gpsvel;
+		dr_data[SELF_ID].pos.x   = gpspos->x;  // robot1.pos[0]; 
+		dr_data[SELF_ID].pos.y   = gpspos->y;  // robot1.pos[1]; 
+		dr_data[SELF_ID].vel     = gpsvel;     // robot1.vel;    
+		dr_data[SELF_ID].heading = att->psi;   // robot1.head;   
 
 		// hacky ways to make them not null terminated...
 		uart_packet_t uart_packet_tx = {
@@ -359,8 +363,8 @@ void uart_esp_loop() {
 					.x = dr_data[SELF_ID].pos.x + 0.1,
 					.y = dr_data[SELF_ID].pos.y + 0.1,
 				},
-				.heading = 180.0 / 3.142 * (dr_data[SELF_ID].heading),
 				.vel = dr_data[SELF_ID].vel + 0.01,
+				.heading = dr_data[SELF_ID].heading + 0.01,
 			},
 		};
 

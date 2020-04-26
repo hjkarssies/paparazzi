@@ -26,7 +26,7 @@
 #ifndef PERCEVITE_VO_H
 #define PERCEVITE_VO_H
 
-#define RR  4.0
+#define RR  10.0
 #define MAX_VEL 20
 #define MAX_DIST 25
 #define max(a,b)  ((a)>=(b)?(a):(b))

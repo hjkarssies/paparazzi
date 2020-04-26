@@ -35,7 +35,7 @@ extern "C" {
 #define ESP_UART_PORT uart2
 
 // Enter ID for drone number (1/2)
-#define SELF_ID 2 // TODO: instead use AC_ID
+// #define SELF_ID 1 // Defined in bebop.xml
 
 #define ESP_MAX_LEN 50
 #define MAX_DRONES 5  
@@ -62,8 +62,8 @@ typedef struct __attribute__((packed)) {
 
 typedef struct __attribute__((packed)) {
   vec2f_t pos;
-  float heading;
   float vel;
+  float heading;
 } drone_data_t;
 
 typedef struct __attribute__((packed)) {
