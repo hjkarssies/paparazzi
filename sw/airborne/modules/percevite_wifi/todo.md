@@ -7,10 +7,12 @@
 -[ ] Module needs to work
 -[ ] GPS reset NPS latest master rebase (MAG fix is here)
 -[ ] ~Motive needs to work~
--[ ] 
--[ ] byh
--[ ] byh
--[ ] byh
--[ ] byh
--[ ] byh
 
+# changes
+1 - [SOLVED] suspect communication problems due to (1) databuf and (2) esp_state being local.
+2 - extern from vo to wifi is not there now.. instead extern from wifi to vo
+
+# todo
+-[.] calib mag both drones
+-[ ] calib acc both drones
+-[.] do something about old vel old head values...

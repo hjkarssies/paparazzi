@@ -6,9 +6,12 @@
   <header>
     <file name="percevite_vo.h"/>
   </header>
-  <init fun="vo_init()"/>
-  <periodic fun="vo_periodic()" freq="5.0" autorun="TRUE"/>
+  <init fun="percevite_vo_init()"/>
+  <periodic fun="percevite_vo_periodic()" freq="5.0" autorun="TRUE"/>
   <makefile>
     <file name="percevite_vo.c"/>
   </makefile>
 </module>
+
+<!-- Assume both robots to be placed at ref in start
+    Then manually start VO after -7,-7 and 7,-7 -->

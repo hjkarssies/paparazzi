@@ -2,15 +2,14 @@
 
 <module name="percevite_wifi">
   <doc>
-    <description>wifi ssid broadcast</description>
+    <description>UART to transfer GPS co-ordinates of pprz to esp32 by ssid beacon broadcast over WiFi</description>
   </doc>
   <header>
     <file name="percevite_wifi.h"/>
   </header>
-  <init fun="uart_esp_init()"/>
-  <periodic fun="uart_esp_loop()" freq="10.0" autorun="TRUE"/>
-  <!-- <periodic fun="vo_simulate_loop()" freq="10" autorun="TRUE"/> -->
-  <event fun="esp_event_uart_rx()"/>
+  <init fun="percevite_wifi_init()"/>
+  <periodic fun="percevite_wifi_tx_loop()" freq="10.0" autorun="FALSE"/>
+  <event fun="percevite_wifi_rx_event()"/>
   <makefile>
     <file name="percevite_wifi.c"/>
     <configure name="ESP_UART_PORT" default="uart2" case="upper|lower"/>

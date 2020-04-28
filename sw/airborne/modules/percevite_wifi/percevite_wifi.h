@@ -36,6 +36,7 @@ extern "C" {
 
 // Enter ID for drone number (1/2)
 // #define SELF_ID 1 // Defined in bebop.xml
+// #define SIM
 
 #define ESP_MAX_LEN 50
 #define MAX_DRONES 5  
@@ -63,7 +64,7 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
   vec2f_t pos;
   float vel;
-  float heading;
+  float head;
 } drone_data_t;
 
 typedef struct __attribute__((packed)) {
@@ -78,10 +79,11 @@ typedef struct __attribute__((packed)){
   drone_data_t data;
 } uart_packet_t;
 
-extern void esp_event_uart_rx(void);
-extern void uart_esp_init(void);
-extern void uart_esp_loop(void);
-// extern void vo_simulate_loop(void);
+extern drone_data_t dr_data[MAX_DRONES];
+
+extern void percevite_wifi_rx_event(void);
+extern void percevite_wifi_init(void);
+extern void percevite_wifi_tx_loop(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

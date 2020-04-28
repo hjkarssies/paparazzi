@@ -24,30 +24,32 @@
  */
 
 /**************************************************************************************
-| Startbytes(0-1)  | DroneID (2) | PacketType (3) | PacketLength (4) | Pos x,y,z (5 - 16) | heading (17 - 21) | Vel x,y,z (21 - 32) | 33                    |
+| Startbytes(0-1)  | DroneID (2) | PacketType (3) | PacketLength (4) | Pos x,y (5 - 12)   | head (13-16)      |  vel (17 - 20)      | checksum (21)         |
 |------------------|-------------|----------------|------------------|--------------------|-------------------|---------------------|-----------------------|
 | 0x24, 0xB2 (hex) | 0x00 NA     | ACK/DATA       | 0 to 64          | 4 bytes (float)    | 4 bytes (float)   | 4 bytes (float)     | checksum (drone data) |
-| UART append      | Drone Info  | Drone Info     | Drone Info       | Drone Data         | Drone Data        | Drone Data          | UART append           |
- * ************************************************************************************/
+| UART append      | Drone Info  | Drone Info     | Drone Info       | Drone Data         | Drone Data        | Drone Data          | UART auto-append      |
+ *************************************************************************************/
 
+/* printf, fprintf */
 #include <stdio.h>
+
+/* memset, memcpy */
 #include <string.h>
 
-#include "modules/percevite_wifi/percevite_wifi.h"
-#include "modules/percevite_vo/percevite_vo.h"
-#include "subsystems/datalink/telemetry.h"
+/* float sys get time */
+#include "mcu_periph/sys_time.h"
+
+/* gps functions */
 #include "state.h"
 
-#include "mcu_periph/sys_time.h"
+#include "modules/percevite_wifi/percevite_wifi.h"
+
+/* add pprz messages later */
+// #include "subsystems/datalink/telemetry.h"
 
 // #define DBG
 
-// FILE *rx_file;
-// FILE *tx_file;
 FILE *drone_data_f;
-
-drone_data_t dr_data[MAX_DRONES];
-uint8_t esp_state = ESP_SYNC;
 
 // tx: finally send a hex array to esp32
 static uint8_t send_to_esp(uint8_t *s, uint8_t len) {
@@ -76,42 +78,47 @@ static uint8_t send_to_esp(uint8_t *s, uint8_t len) {
 // tx: send struct to esp32
 static void tx_struct(uart_packet_t *uart_packet_tx) {
 
+	printf("[tx] id: %d, x: %f, y: %f, vel: %f, head: %f\n", 
+		uart_packet_tx->info.drone_id,
+		uart_packet_tx->data.pos.x, uart_packet_tx->data.pos.y,
+		uart_packet_tx->data.vel,   uart_packet_tx->data.head);
+
+	/* uart_packet_t = drone_info_t + drone_data_t */
+
 	uint8_t tx_string[ESP_MAX_LEN] = {0};
-
-	//uart_packet_t = drone_info_t + drone_data_t;
-
 	// copy packed struct into a string
 	memcpy(tx_string, uart_packet_tx, sizeof(uart_packet_t));
 
 	#ifdef DBG
-	printf("ssid should be:\n");
+	// check via wireshark
+	printf("ESP SSID should be:\n");
 	for (int i = 0; i < sizeof(uart_packet_t); i++) {
 		printf("0x%02x,", tx_string[i]);
 	}
-	printf("\n*******\n");
+	printf(" + checksum ****\n");
 	#endif
 	
 	// send "stringed" struct
 	send_to_esp(tx_string, sizeof(uart_packet_t));
-	
 }
 
 // rx: print struct received after checksum match
 static void print_drone_struct(uart_packet_t *uart_packet_rx) {
-	// TODO: drone1 populate.. 
-	printf("[rx] drone_id: %d, pos.x: %f, pos.y: %f, vel: %f, heading: %f\n", 
+	printf("[rx] id: %d, x: %f, y: %f, vel: %f, head: %f\n", 
 					uart_packet_rx->info.drone_id,
 					uart_packet_rx->data.pos.x, uart_packet_rx->data.pos.y,
-					uart_packet_rx->data.vel, uart_packet_rx->data.heading);
-	robot2.pos[0] = uart_packet_rx->data.pos.x;
-	robot2.pos[1] = uart_packet_rx->data.pos.y;
-	robot2.vel = uart_packet_rx->data.vel;
-	robot2.head = uart_packet_rx->data.heading;
+					uart_packet_rx->data.vel, uart_packet_rx->data.head);
 }
 
-uint8_t databuf[ESP_MAX_LEN] = {0};
+
 // rx: parse other drone ids that are reported by esp32
 static void esp_parse(uint8_t c) {
+
+	// start state-machine for syncing to esp32
+	static uint8_t esp_state = ESP_SYNC;
+
+	// temp data-buffer to store espdata
+	static uint8_t databuf[ESP_MAX_LEN] = {0};
 
 	static uint8_t byte_ctr = 0;
 	static uint8_t drone_id = 0;
@@ -125,6 +132,7 @@ static void esp_parse(uint8_t c) {
 	#endif
   
 	switch (esp_state) {
+		
     case ESP_SYNC: {
 			/* first char, sync string */
 			if (c == '$') {
@@ -175,8 +183,7 @@ static void esp_parse(uint8_t c) {
 				} 
 			} else {
 				// do nothing?!
-			}
-			
+			}	
 		} break;
 
 		case ESP_DRONE_DATA: {
@@ -211,7 +218,6 @@ static void esp_parse(uint8_t c) {
 		} // no break statement required;
 
     case ESP_RX_OK: {
-
 			#ifdef DBG
 			printf("[uart] received string: ");
 			// print string
@@ -230,6 +236,7 @@ static void esp_parse(uint8_t c) {
 			};
 
 			/* checksum matches, proceed to populate the data struct */
+			/* hope this is atomic, vo reads from externed dr_data */
 			memcpy(&dr_data[drone_id], &databuf, sizeof(drone_data_t));
 
 			/* now revise the entire packet.. for dropout logs later */
@@ -237,20 +244,24 @@ static void esp_parse(uint8_t c) {
 			print_drone_struct(&uart_packet_rx);
 		
 			/* reset state machine */
+			memset(databuf, 0, ESP_MAX_LEN);
 			checksum = 0;
 			esp_state = ESP_SYNC;
-
 		} break;
+
     case ESP_RX_ERR: {
 			#ifdef DBG
 			printf("[uart] ESP_RX_ERR\n");
 			#endif
+			memset(databuf, 0, ESP_MAX_LEN);
 			byte_ctr = 0;
 			checksum = 0;
 			/* reset state machine, string terminated earlier than expected */
 			esp_state = ESP_SYNC;
     } break;
+
     default: {
+			memset(databuf, 0, ESP_MAX_LEN);
 			byte_ctr = 0;
 			checksum = 0;
 			esp_state = ESP_SYNC;
@@ -262,14 +273,12 @@ static void esp_parse(uint8_t c) {
 		byte_ctr = 2;
 		esp_state = ESP_DRONE_INFO;
   }
-
 	/* for start byte pattern check */
 	prev_char = c;
-
 }
 
-// rx: event based UART polling function 
-void esp_event_uart_rx(void) {
+// uart rx: event based polling function for data rxed from esp32
+void percevite_wifi_rx_event(void) {
 	// // Look for data on serial link and send to parser
 	while (uart_char_available(&(ESP_UART_PORT))) {
 		uint8_t ch = uart_getch(&(ESP_UART_PORT));
@@ -280,76 +289,54 @@ void esp_event_uart_rx(void) {
 // init: clear all data for all drones
 static void clear_drone_status(void) {
 	for (uint8_t id = 0; id < MAX_DRONES; id++) {
-		// initialize at tropical waters of eastern Altanic ocean, facing the artic
-		dr_data[id].pos.x   = 0.0;
-		dr_data[id].pos.y   = 0.0;
-		dr_data[id].vel     = 0.0;
-		dr_data[id].heading = 0.0;
+		// initialize all drones in the tropical waters of eastern Altanic ocean, facing the artic
+		dr_data[id].pos.x = 0.0;
+		dr_data[id].pos.y = 0.0;
+		dr_data[id].vel   = 0.0;
+		dr_data[id].head  = 0.0;
 	}
 }
 
-robot_t robot1;
-robot_t robot2;
-
-// init: uart esp32 bbp
-void uart_esp_init() {
+void percevite_wifi_init() {
 
 	drone_data_f = fopen("drone_data.csv", "w+");
-	
-	/* reset receive buffer state machine */
-	esp_state = ESP_SYNC;
 
 	/* check pprz message for drone1 and drone2 (sort of like esp heartbeat) */
 	// register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PERCEVITE_WIFI, msg_cb);
 
 	clear_drone_status();
 
-	/* already done at GPS init */
-	// struct LlaCoor_i *lla_ref = stateGetPositionLla_i();
-	// struct LtpDef_i *ltp_def;
-	// ltp_def_from_lla_i(&ltp_def, &lla_ref);
-	// stateSetLocalOrigin_i(&ltp_def);
-
-	// percevite_vo init code here
-  robot1.pos[0] = -30.0;
-  robot1.pos[1] = -30.0;
-  robot1.vel = 0.4;
-  robot1.head = (D2R) * 45.0;
-  robot1.oldvel = 0.4;
-  robot1.oldhead = (D2R) * 45.0;
-
-  robot2.pos[0] = 30.0;
-  robot2.pos[1] = -30.0;
-  robot2.vel = 0.4;
-  robot2.head = (D2R) * 135.0;
-  robot2.oldvel = 0.4;
-  robot2.oldhead = (D2R) * 135.0;
+	/* GPS init
+	// already done at GPS init
+	struct LlaCoor_i *lla_ref = stateGetPositionLla_i();
+	struct LtpDef_i *ltp_def;
+	ltp_def_from_lla_i(&ltp_def, &lla_ref);
+	stateSetLocalOrigin_i(&ltp_def);
+	*/
 	
-	printf("-----------------Drone ID: %d-----------------\n", SELF_ID);
+	printf("-----------------Drone ID: [%d]-----------------\n", SELF_ID);
 
 	struct LlaCoor_f *lla_ref_f = stateGetPositionLla_f();
   bool gps_valid_startup = stateIsLocalCoordinateValid();
 	printf("GPS initialized with [%d] at lat: %f, long: %f \n", 
 					gps_valid_startup, 
 					lla_ref_f->lat * 180.0/3.142, lla_ref_f->lon * 180.0/3.142);
-
-	printf("sizeof(uart_packet_t) = %d\n", sizeof(uart_packet_t));
-	printf("sizeof(drone_data_t) = %d\n", sizeof(drone_data_t));
-	printf("sizeof(drone_info_t) = %d\n", sizeof(drone_info_t));
 }
 
 // change ssid ten times every second
-void uart_esp_loop() {
+void percevite_wifi_tx_loop() {
 	bool gps_valid = stateIsLocalCoordinateValid();
 	if (gps_valid) {
 		struct NedCoor_f *gpspos = stateGetPositionNed_f();
 		float gpsvel = stateGetHorizontalSpeedNorm_f();
 		struct FloatEulers *att = stateGetNedToBodyEulers_f();
 
-		dr_data[SELF_ID].pos.x   = gpspos->x;  // robot1.pos[0]; 
-		dr_data[SELF_ID].pos.y   = gpspos->y;  // robot1.pos[1]; 
-		dr_data[SELF_ID].vel     = gpsvel;     // robot1.vel;    
-		dr_data[SELF_ID].heading = att->psi;   // robot1.head;   
+		#ifndef SIM
+		dr_data[SELF_ID].pos.x = gpspos->x;
+		dr_data[SELF_ID].pos.y = gpspos->y;
+		dr_data[SELF_ID].vel   = gpsvel;   
+		dr_data[SELF_ID].head  = att->psi;
+		#endif
 
 		// hacky ways to make them not null terminated...
 		uart_packet_t uart_packet_tx = {
@@ -364,21 +351,20 @@ void uart_esp_loop() {
 					.y = dr_data[SELF_ID].pos.y + 0.1,
 				},
 				.vel = dr_data[SELF_ID].vel + 0.01,
-				.heading = dr_data[SELF_ID].heading + 0.01,
+				.head = dr_data[SELF_ID].head + 0.01,
 			},
 		};
 
-		printf("[tx] selfID: %d, pos.x: %f, pos.y: %f, vel: %f, heading: %f\n", 
-				uart_packet_tx.info.drone_id,
-				uart_packet_tx.data.pos.x, uart_packet_tx.data.pos.y,
-				uart_packet_tx.data.vel, uart_packet_tx.data.heading);
+		/* send to esp32 for changing its ssid */
 		tx_struct(&uart_packet_tx);
+
+		// TODO: send_data_for_vo(&dr_data);
 
 		// LOG: MAXDRONES for me = 2 (can't use ID 0x00 packet terminates..):(
 		// fmt: x,y,vel,head,time
 		for (int id = 1; id < 3; id++) {
 			fprintf(drone_data_f, "%f,%f,", dr_data[id].pos.x, dr_data[id].pos.y);
-			fprintf(drone_data_f, "%f,%f,", dr_data[id].vel, dr_data[id].heading);
+			fprintf(drone_data_f, "%f,%f,", dr_data[id].vel, dr_data[id].head);
 		}
 		fprintf(drone_data_f, "%f\n", get_sys_time_float());
 	}
