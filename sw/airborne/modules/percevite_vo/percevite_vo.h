@@ -29,7 +29,7 @@
 /* dr_data[MAX_DRONES] */
 #include "modules/percevite_wifi/percevite_wifi.h"
 
-#define RR  8.0
+#define RR  3.0
 #define max(a,b)  ((a)>=(b)?(a):(b))
 #define min(a,b)  ((a)<=(b)?(a):(b))
 

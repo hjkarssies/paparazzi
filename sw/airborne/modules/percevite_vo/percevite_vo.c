@@ -139,13 +139,13 @@ void percevite_vo_detect(drone_data_t *robot1, drone_data_t *robot2) {
     norm_vrel = 0.1;
   }
 
-  // for details on these two variables read Dennis Wijngaarden's prelim
+  // details on these two variables in Dennis Wijngaarden's prelim
   float tcpa = -float_vect_dot_product(drel, vrel, 2) / pow(norm_vrel, 2);
   float dcpa = sqrtf((fabsf(pow(float_vect_norm(drel, 2), 2) - (pow(tcpa, 2) * pow(float_vect_norm(vrel, 2), 2)))));
   // printf("tcpa: %f, dcpa: %f\n", tcpa, dcpa);
 
-  float angleb = atan2(robot2->pos.y, robot2->pos.x);
-  float deltad = float_vect_norm(drel,2);
+  float angleb = atan2((robot2->pos.y - robot1->pos.y), (robot2->pos.x - robot1->pos.x));
+  float deltad = float_vect_norm(drel, 2);
   float angleb1 = angleb - atan(RR / deltad);
   float angleb2 = angleb + atan(RR / deltad);
 
@@ -157,8 +157,9 @@ void percevite_vo_detect(drone_data_t *robot1, drone_data_t *robot2) {
   centre[1] = robot1->pos.y + robot2_offset[1];
   
   // collision is imminent if tcpa > 0 and dcpa < RR
-  if ((tcpa > 0) && (dcpa < RR)) {
+  if ((tcpa > 0) && (dcpa < RR) && (deltad > 1.5 * RR)) {
     float newvel_cart[2];
+    /* TODO: fix choosing L or R */
     percevite_vo_resolve_by_project(robot1, angleb1, angleb2, centre, newvel_cart);
 
     float resolved_vel_bdy, resolved_head_bdy;
