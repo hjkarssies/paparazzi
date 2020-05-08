@@ -469,7 +469,6 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 
   /*Commit the actuator command*/
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    actuators_pprz[i] = (int16_t) indi_u[i];
 	inca.commands[i] = (int16_t) indi_u[i];
   }
 }
@@ -727,12 +726,21 @@ void calc_g1g2_pseudo_inv(void)
 static void rpm_cb(uint8_t __attribute__((unused)) sender_id, uint16_t UNUSED *rpm, uint8_t UNUSED num_act)
 {
 #if INDI_RPM_FEEDBACK
-  int8_t i;
-  for (i = 0; i < num_act; i++) {
-    act_obs[i] = (rpm[i] - get_servo_min_PWM(i));
-    act_obs[i] *= (MAX_PPRZ / (float)(get_servo_max_PWM(i) - get_servo_min_PWM(i)));
-    Bound(act_obs[i], 0, MAX_PPRZ);
-  }
+  #ifndef ACTUATORS_PWM_H
+    int8_t i;
+    for (i = 0; i < num_act; i++) {
+      act_obs[i] = (rpm[i] - get_servo_min(i));
+      act_obs[i] *= (MAX_PPRZ / (float)(get_servo_max(i) - get_servo_min(i)));
+      Bound(act_obs[i], 0, MAX_PPRZ);
+    }
+  #else
+    int8_t i;
+    for (i = 0; i < num_act; i++) {
+      act_obs[i] = (rpm[i] - get_servo_min_PWM(i));
+      act_obs[i] *= (MAX_PPRZ / (float)(get_servo_max_PWM(i) - get_servo_min_PWM(i)));
+      Bound(act_obs[i], 0, MAX_PPRZ);
+    }
+  #endif
 #endif
 }
 
