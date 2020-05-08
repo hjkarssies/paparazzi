@@ -30,7 +30,7 @@
  * http://arc.aiaa.org/doi/pdf/10.2514/1.G001490
  */
 
-#include "firmwares/rotorcraft/stabilization/stabilization_indi.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_inca.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
@@ -71,6 +71,8 @@ struct ReferenceSystem reference_acceleration = {
   STABILIZATION_INDI_REF_RATE_Q,
   STABILIZATION_INDI_REF_RATE_R,
 };
+
+struct IncaParams inca;
 
 #if STABILIZATION_INDI_USE_ADAPTIVE
 bool indi_use_adaptive = true;
@@ -218,8 +220,13 @@ void stabilization_indi_init(void)
   //Calculate G1G2_PSEUDO_INVERSE
   calc_g1g2_pseudo_inv();
 
-  // Initialize the array of pointers to the rows of g1g2
+  //Initialize the array of INCA commands
   uint8_t i;
+  for (i = 0; i < INDI_NUM_ACT; i++) {
+    inca.commands[i] = 0;
+  }
+
+  // Initialize the array of pointers to the rows of g1g2
   for (i = 0; i < INDI_OUTPUTS; i++) {
     Bwls[i] = g1g2[i];
   }
@@ -463,6 +470,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   /*Commit the actuator command*/
   for (i = 0; i < INDI_NUM_ACT; i++) {
     actuators_pprz[i] = (int16_t) indi_u[i];
+	inca.commands[i] = (int16_t) indi_u[i];
   }
 }
 

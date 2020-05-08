@@ -36,7 +36,7 @@
 		<module name="imu" type="aspirin_v2.2"/>
 		<module name="gps" type="datalink"/>
 		
-		<module name="stabilization" type="indi">
+		<module name="stabilization" type="inca">
 			<define name="INDI_RPM_FEEDBACK" value="TRUE"/>
 		</module>
 
@@ -93,10 +93,10 @@
 		<let var="rudder"				value="@YAW * 1.2"/>
 		
 		<!-- Quadcopter actuatortor set -->
-		<set servo="FRONT_LEFT"			value="$quad_on ? actuators_pprz[0] : -MAX_PPRZ"/>
-		<set servo="FRONT_RIGHT"		value="$quad_on ? actuators_pprz[1] : -MAX_PPRZ"/>
-		<set servo="BACK_RIGHT"			value="$quad_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-		<set servo="BACK_LEFT"			value="$quad_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+		<set servo="FRONT_LEFT"			value="$quad_on ? inca.commands[0] : -MAX_PPRZ"/>
+		<set servo="FRONT_RIGHT"		value="$quad_on ? inca.commands[1] : -MAX_PPRZ"/>
+		<set servo="BACK_RIGHT"			value="$quad_on ? inca.commands[2] : -MAX_PPRZ"/>
+		<set servo="BACK_LEFT"			value="$quad_on ? inca.commands[3] : -MAX_PPRZ"/>
 		
 		<!-- Fixed wing actuator set -->
 		<set servo="FLYMOTOR"			value="$fixed_wing_on * @THRUST"/>
