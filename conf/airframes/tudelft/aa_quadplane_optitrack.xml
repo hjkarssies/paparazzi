@@ -100,9 +100,8 @@
 		<!-- Fixed wing actuator set -->
 		<set servo="FLYMOTOR"			value="$fixed_wing_on * @THRUST"/>
 		<set servo="AILERONS"			value="$fixed_wing_on * @ROLL * 1.3"/>
-		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on * (-$elevator - $rudder)"/>
 		<set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on * ( $elevator - $rudder)"/>
-		<set servo="AILERONS"			value="$fixed_wing_on * @ROLL * 1.3"/>
+		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on * (-$elevator - $rudder)"/>
 		
 	</command_laws>
 
