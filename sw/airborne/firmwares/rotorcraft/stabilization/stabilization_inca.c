@@ -52,6 +52,7 @@ float du_min[INDI_NUM_ACT];
 float du_max[INDI_NUM_ACT];
 float du_pref[INDI_NUM_ACT];
 float indi_v[INDI_OUTPUTS];
+float indi_v_abs[INDI_OUTPUTS];
 float *Bwls[INDI_OUTPUTS];
 int num_iter = 0;
 
@@ -71,8 +72,6 @@ struct ReferenceSystem reference_acceleration = {
   STABILIZATION_INDI_REF_RATE_Q,
   STABILIZATION_INDI_REF_RATE_R,
 };
-
-struct IncaParams inca;
 
 #if STABILIZATION_INDI_USE_ADAPTIVE
 bool indi_use_adaptive = true;
@@ -185,6 +184,20 @@ static void send_indi_g(struct transport_tx *trans, struct link_device *dev)
                        INDI_NUM_ACT, g2_est);
 }
 
+static void send_indi_v(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_INDI_V(trans, dev, AC_ID, INDI_OUTPUTS, indi_v,
+                       INDI_OUTPUTS, indi_v_abs,
+                       INDI_OUTPUTS, radio_control.values);
+}
+
+static void send_indi_du(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_INDI_DU(trans, dev, AC_ID, INDI_NUM_ACT, du_min,
+                       INDI_NUM_ACT, du_max,
+                       INDI_NUM_ACT, du_pref);
+}
+
 static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *dev)
 {
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
@@ -220,13 +233,8 @@ void stabilization_indi_init(void)
   //Calculate G1G2_PSEUDO_INVERSE
   calc_g1g2_pseudo_inv();
 
-  //Initialize the array of INCA commands
-  uint8_t i;
-  for (i = 0; i < INDI_NUM_ACT; i++) {
-    inca.commands[i] = 0;
-  }
-
   // Initialize the array of pointers to the rows of g1g2
+  uint8_t i;
   for (i = 0; i < INDI_OUTPUTS; i++) {
     Bwls[i] = g1g2[i];
   }
@@ -246,6 +254,8 @@ void stabilization_indi_init(void)
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_G, send_indi_g);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_V, send_indi_v);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_DU, send_indi_du);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
 #endif
 }
@@ -410,6 +420,12 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   indi_v[2] = (angular_accel_ref.r - angular_acceleration[2] + g2_times_du);
   indi_v[3] = v_thrust;
 
+  // The control objective in array format
+  indi_v_abs[0] = angular_accel_ref.p;
+  indi_v_abs[1] = angular_accel_ref.q;
+  indi_v_abs[2] = angular_accel_ref.r;
+  indi_v_abs[3] = v_thrust;
+
 #if STABILIZATION_INDI_ALLOCATION_PSEUDO_INVERSE
   // Calculate the increment for each actuator
   for (i = 0; i < INDI_NUM_ACT; i++) {
@@ -469,8 +485,13 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 
   /*Commit the actuator command*/
   for (i = 0; i < INDI_NUM_ACT; i++) {
-	inca.commands[i] = (int16_t) indi_u[i];
+    actuators_pprz[i] = (int16_t) indi_u[i];
   }
+  actuators_pprz[4] = (int16_t) radio_control.values[RADIO_THROTTLE];
+  actuators_pprz[5] = (int16_t) 1.3*radio_control.values[RADIO_ROLL];
+  actuators_pprz[6] = (int16_t) 1.5*radio_control.values[RADIO_PITCH] - 1.2*radio_control.values[RADIO_YAW];
+  actuators_pprz[7] = (int16_t) -1.5*radio_control.values[RADIO_PITCH] - 1.2*radio_control.values[RADIO_YAW];
+
 }
 
 /**

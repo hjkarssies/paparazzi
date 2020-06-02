@@ -37,8 +37,8 @@
 		<module name="gps" type="datalink"/>
 
 		<module name="stabilization" type="inca">
-			<define name="INDI_NUM_ACT"			value="4"/>
-			<define name="INDI_RPM_FEEDBACK"	value="TRUE"/>
+			<!-- <define name="INDI_NUM_ACT"			value="4"/> -->
+			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
 		<module name="ahrs" type="int_cmpl_quat">
@@ -49,6 +49,7 @@
 		<module name="ins" type="extended"/>
 		<module name="geo_mag"/>
 		<module name="air_data"/>
+		<module name="sys_mon"/>
 
 		<!--define name="KILL_ON_GROUND_DETECT" value="TRUE"/-->
 
@@ -87,23 +88,28 @@
 
 		<!-- Variables indicating if a certain actuator set is active -->
 		<let var="fixed_wing_on"		value="@FORWARD_MODE >= -4800? autopilot_get_motors_on() : 0"/>
-		<let var="quad_on"				value="@FORWARD_MODE <= 4800? autopilot_get_motors_on() : 0"/>
+		<let var="quad_on"				value="@FORWARD_MODE <=  4800? autopilot_get_motors_on() : 0"/>
 
 		<!-- Variables used for ruddervator calculations -->
-		<let var="elevator"				value="@PITCH * 1.5"/>
-		<let var="rudder"				value="@YAW * 1.2"/>
+		<!-- <let var="elevator"				value="@PITCH * 1.5"/> -->
+		<!-- <let var="rudder"				value="@YAW   * 1.2"/> -->
 
 		<!-- Quadcopter actuatortor set -->
-		<set servo="FRONT_LEFT"			value="$quad_on ? actuators_pprz[0] : -MAX_PPRZ"/>
-		<set servo="FRONT_RIGHT"		value="$quad_on ? actuators_pprz[1] : -MAX_PPRZ"/>
-		<set servo="BACK_RIGHT"			value="$quad_on ? actuators_pprz[2] : -MAX_PPRZ"/>
-		<set servo="BACK_LEFT"			value="$quad_on ? actuators_pprz[3] : -MAX_PPRZ"/>
+		<set servo="FRONT_LEFT"			value="$quad_on? actuators_pprz[0] : -MAX_PPRZ"/>
+		<set servo="FRONT_RIGHT"		value="$quad_on? actuators_pprz[1] : -MAX_PPRZ"/>
+		<set servo="BACK_RIGHT"			value="$quad_on? actuators_pprz[2] : -MAX_PPRZ"/>
+		<set servo="BACK_LEFT"			value="$quad_on? actuators_pprz[3] : -MAX_PPRZ"/>
 
 		<!-- Fixed wing actuator set -->
-		<set servo="FLYMOTOR"			value="$fixed_wing_on * @THRUST"/>
-		<set servo="AILERONS"			value="$fixed_wing_on * @ROLL * 1.3"/>
-		<set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on * ( $elevator - $rudder)"/>
-		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on * (-$elevator - $rudder)"/>
+		<set servo="FLYMOTOR"			value="$fixed_wing_on? actuators_pprz[4] : 0"/>
+		<set servo="AILERONS"			value="$fixed_wing_on? actuators_pprz[5] : 0"/>
+		<set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on? actuators_pprz[6] : 0"/>
+		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on? actuators_pprz[7] : 0"/>
+		
+		<!-- <set servo="FLYMOTOR"			value="$fixed_wing_on? @THRUST 				  : 0"/> -->
+		<!-- <set servo="AILERONS"			value="$fixed_wing_on? @ROLL * 1.3			  : 0"/> -->
+		<!-- <set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on? ( $elevator - $rudder) : 0"/> -->
+		<!-- <set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on? (-$elevator - $rudder) : 0"/> -->
 
 	</command_laws>
 
@@ -174,35 +180,41 @@
 
 	<section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
 
-		<!-- Control effectiveness, have been determined by flying test flights with adaptive turned on./-->
-		<define name="G1_ROLL"					value="{ 11.0,  -11.0,  -11.0,  11.0,  0.0, 0.0, 0.0, 0.0}"/>
-		<define name="G1_PITCH"					value="{  8.5,    8.5,   -8.5,  -8.5,  0.0, 0.0, 0.0, 0.0}"/>
-		<define name="G1_YAW"					value="{ -0.50,   0.50,  -0.50,  0.50, 0.0, 0.0, 0.0, 0.0}"/>
-		<define name="G1_THRUST"				value="{  -.40,   -.40,   -.40,  -.40, 0.0, 0.0, 0.0, 0.0}"/>
+		<define name="G1_L"						value="22.0"/>
+		<define name="G1_M"						value="17.0"/>
+		<define name="G1_N"						value="01.0"/>
+		<define name="G1_T"						value="00.8"/>
+		<define name="G2_N"						value="96.0"/>
+		
+		<!--C ontrol effectiveness, have been determined by flying test flights with adaptive turned on -->
+		<define name="G1_ROLL"					value="{ 22.0,  -22.0,  -22.0,  22.0}"/>
+		<define name="G1_PITCH"					value="{ 17.0,   17.0,  -17.0, -17.0}"/>
+		<define name="G1_YAW"					value="{  1.00,  -1.00,   1.00, -1.00}"/>
+		<define name="G1_THRUST"				value="{  -.80,   -.80,   -.80,  -.80}"/>
 
-		<!--Counter torque effect of spinning up a rotor-->
-		<define name="G2"						value="{-48.0,   48.0,   -48.0, 48.0,  0.0, 0.0, 0.0, 0.0}"/>
+		<!-- Counter torque effect of spinning up a rotor -->
+		<define name="G2"						value="{ 96.0,  -96.0,   96.0, -96.0}"/>
 
-		<!-- reference acceleration for attitude control -->
-		<define name="REF_ERR_P"				value="600.0"/>
-		<define name="REF_ERR_Q"				value="600.0"/>
-		<define name="REF_ERR_R"				value="600.0"/>
-		<define name="REF_RATE_P"				value="28.0"/>
-		<define name="REF_RATE_Q"				value="28.0"/>
-		<define name="REF_RATE_R"				value="28.0"/>
+		<!-- Reference acceleration for attitude control -->
+		<define name="REF_ERR_P"				value="300.0"/>
+		<define name="REF_ERR_Q"				value="300.0"/>
+		<define name="REF_ERR_R"				value="300.0"/>
+		<define name="REF_RATE_P"				value="40.0"/>
+		<define name="REF_RATE_Q"				value="40.0"/>
+		<define name="REF_RATE_R"				value="40.0"/>
 
 		<define name="ESTIMATION_FILT_CUTOFF"	value="4.0"/>
 		<define name="FILT_CUTOFF"				value="5.0"/>
 
-		<!-- first order actuator dynamics -->
-		<define name="ACT_DYN"					value="{0.1, 0.1, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0}"/>
+		<!-- First order actuator dynamics -->
+		<define name="ACT_DYN"					value="{0.1, 0.1, 0.1, 0.1}"/>
 
 		<!-- Adaptive Learning Rate -->
 		<define name="USE_ADAPTIVE"				value="FALSE"/>
 		<define name="ADAPTIVE_MU"				value="0.00001"/>
 
 		<!--Priority for each axis (roll, pitch, yaw and thrust)-->
-		<define name="WLS_PRIORITIES"			value="{1000, 1000, 1, 100}"/>
+		<define name="WLS_PRIORITIES"			value="{100, 100, 1, 1000}"/>
 
 	</section>
 
@@ -241,7 +253,7 @@
 		<define name="JSBSIM_MODEL"		value="simple_quad"											type="string"/>
 		<define name="SENSORS_PARAMS"	value="nps_sensors_params_default.h"						type="string"/>
 
-		<!-- mode switch on joystick ch5 (numbering starts at zero) -->
+		<!-- Mode switch on joystick ch5 (numbering starts at zero) -->
 		<define name="JS_AXIS_MODE"		value="4"/>
 
 	</section>

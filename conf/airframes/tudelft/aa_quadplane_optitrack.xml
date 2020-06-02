@@ -81,28 +81,28 @@
 	<!-- COMMANDS LAWS -->
 
 	<command_laws>
-	
+
 		<!-- Variables indicating if a certain actuator set is active -->
 		<let var="fixed_wing_on"		value="@FORWARD_MODE >= -4800? autopilot_get_motors_on() : 0"/>
-		<let var="quad_on"				value="@FORWARD_MODE <= 4800? autopilot_get_motors_on() : 0"/>
-		
+		<let var="quad_on"				value="@FORWARD_MODE <=  4800? autopilot_get_motors_on() : 0"/>
+
 		<!-- Variables used for ruddervator calculations -->
 		<let var="elevator"				value="@PITCH * 1.5"/>
-		<let var="rudder"				value="@YAW * 1.2"/>
-		
+		<let var="rudder"				value="@YAW   * 1.2"/>
+
 		<!-- Quadcopter actuatortor set -->
 		<call fun="motor_mixing_run(autopilot_get_motors_on(), FALSE, values)"/>
 		<set servo="FRONT_LEFT"			value="$quad_on ? motor_mixing.commands[0] : -MAX_PPRZ"/>
 		<set servo="FRONT_RIGHT"		value="$quad_on ? motor_mixing.commands[1] : -MAX_PPRZ"/>
 		<set servo="BACK_RIGHT"			value="$quad_on ? motor_mixing.commands[2] : -MAX_PPRZ"/>
 		<set servo="BACK_LEFT"			value="$quad_on ? motor_mixing.commands[3] : -MAX_PPRZ"/>
-		
+
 		<!-- Fixed wing actuator set -->
-		<set servo="FLYMOTOR"			value="$fixed_wing_on * @THRUST"/>
-		<set servo="AILERONS"			value="$fixed_wing_on * @ROLL * 1.3"/>
-		<set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on * ( $elevator - $rudder)"/>
-		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on * (-$elevator - $rudder)"/>
-		
+		<set servo="FLYMOTOR"			value="$fixed_wing_on? @THRUST 				  : 0"/>
+		<set servo="AILERONS"			value="$fixed_wing_on? @ROLL * 1.3			  : 0"/>
+		<set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on? ( $elevator - $rudder) : 0"/>
+		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on? (-$elevator - $rudder) : 0"/>
+
 	</command_laws>
 
 	<!-- SETTINGS -->
@@ -238,14 +238,14 @@
 	</section>
 
 	<section name="AUTOPILOT">
-		<!-- <define name="MODE_MANUAL"			value="AP_MODE_RC_DIRECT"/> -->
-		<define name="MODE_MANUAL"			value="AP_MODE_ATTITUDE_DIRECT"/>
-		<define name="MODE_AUTO1"			value="AP_MODE_HOVER_Z_HOLD"/>
+		<define name="MODE_MANUAL"			value="AP_MODE_RC_DIRECT"/>
+		<define name="MODE_AUTO1"			value="AP_MODE_ATTITUDE_DIRECT"/>
+		<define name="MODE_AUTO2"			value="AP_MODE_HOVER_Z_HOLD"/>
 		<!-- <define name="MODE_AUTO2"			value="AP_MODE_CARE_FREE_DIRECT"/> -->
 		<!-- <define name="MODE_AUTO2"			value="AP_MODE_ATTITUDE_Z_HOLD"/> -->
 		<!-- <define name="MODE_AUTO2"			value="AP_MODE_HOVER_DIRECT"/> -->
 		<!-- <define name="MODE_AUTO2"			value="AP_MODE_HOVER_Z_HOLD"/> -->
-		<define name="MODE_AUTO2"			value="AP_MODE_NAV"/>
+		<!-- <define name="MODE_AUTO2"			value="AP_MODE_NAV"/> -->
 		<define name="NO_RC_THRUST_LIMIT"	value="FALSE"/>
 	</section>
 

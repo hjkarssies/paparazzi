@@ -36,6 +36,7 @@
       <message name="LIDAR"                    period="1.2"/>
       <message name="INS_EKF2"                 period=".25"/>
       <message name="ACTUATORS"                period="0.05"/>
+      <message name="SYS_MON"                  period="0.5"/>
     </mode>
 
     <mode name="ppm">
@@ -108,6 +109,9 @@
       <message name="STAB_ATTITUDE_REF_FLOAT" period=".03"/>
       <message name="STAB_ATTITUDE_INDI"      period=".25"/>
       <message name="INDI_G"            period="2.0"/>
+      <message name="INDI_V"            period="0.05"/>
+      <message name="INDI_DU"			period="2.0"/>
+      <message name="ACTUATORS"                period="0.05"/>
     </mode>
 
     <mode name="vert_loop" key_press="v">

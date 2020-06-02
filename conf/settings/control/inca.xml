@@ -1,0 +1,13 @@
+<!DOCTYPE settings SYSTEM "../settings.dtd">
+
+<settings target="ap|nps">
+  <dl_settings>
+    <dl_settings NAME="G matrix">
+       <dl_setting var="act_eff.g1_l" module="stabilization_inca" min="0" step="1" max="100" shortname="G1_L" param="STABILIZATION_INDI_G1_L"/>
+       <dl_setting var="act_eff.g1_m" module="stabilization_inca" min="0" step="1" max="100" shortname="G1_M" param="STABILIZATION_INDI_G1_M"/>
+       <dl_setting var="act_eff.g1_n" module="stabilization_inca" min="0" step="1" max="100" shortname="G1_N" param="STABILIZATION_INDI_G1_N"/>
+       <dl_setting var="act_eff.g1_t" module="stabilization_inca" min="0" step="1" max="100" shortname="G1_T" param="STABILIZATION_INDI_G1_T"/>
+       <dl_setting var="act_eff.g2_n" module="stabilization_inca" min="0" step="1" max="200" shortname="G2_N" param="STABILIZATION_INDI_G2_N"/>
+    </dl_settings>
+  </dl_settings>
+</settings>

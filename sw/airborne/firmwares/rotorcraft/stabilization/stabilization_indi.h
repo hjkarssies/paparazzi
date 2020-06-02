@@ -44,7 +44,16 @@ struct ReferenceSystem {
   float rate_r;
 };
 
+struct ActuatorEffectiveness {
+  float g1_l;
+  float g1_m;
+  float g1_n;
+  float g1_t;
+  float g2_n;
+};
+
 extern struct ReferenceSystem reference_acceleration;
+extern struct ActuatorEffectiveness act_eff;
 
 extern void stabilization_indi_init(void);
 extern void stabilization_indi_enter(void);
