@@ -179,12 +179,6 @@
 	</section>
 
 	<section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
-
-		<define name="G1_L"						value="22.0"/>
-		<define name="G1_M"						value="17.0"/>
-		<define name="G1_N"						value="01.0"/>
-		<define name="G1_T"						value="00.8"/>
-		<define name="G2_N"						value="96.0"/>
 		
 		<!--C ontrol effectiveness, have been determined by flying test flights with adaptive turned on -->
 		<define name="G1_ROLL"					value="{ 22.0,  -22.0,  -22.0,  22.0}"/>
