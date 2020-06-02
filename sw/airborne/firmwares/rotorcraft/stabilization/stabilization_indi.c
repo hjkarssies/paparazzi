@@ -71,13 +71,6 @@ struct ReferenceSystem reference_acceleration = {
   STABILIZATION_INDI_REF_RATE_Q,
   STABILIZATION_INDI_REF_RATE_R,
 };
-struct ActuatorEffectiveness act_eff = {
-  STABILIZATION_INDI_G1_L,
-  STABILIZATION_INDI_G1_M,
-  STABILIZATION_INDI_G1_N,
-  STABILIZATION_INDI_G1_T,
-  STABILIZATION_INDI_G2_N,
-};
 
 #if STABILIZATION_INDI_USE_ADAPTIVE
 bool indi_use_adaptive = true;

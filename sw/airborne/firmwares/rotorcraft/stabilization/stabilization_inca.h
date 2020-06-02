@@ -44,12 +44,6 @@ struct ReferenceSystem {
   float rate_r;
 };
 
-struct IncaParams {
-  int16_t commands[INDI_NUM_ACT];
-};
-
-extern struct IncaParams inca;
-
 extern struct ReferenceSystem reference_acceleration;
 
 extern void stabilization_indi_init(void);
