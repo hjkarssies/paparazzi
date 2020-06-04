@@ -180,14 +180,25 @@
 
 	<section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
 		
-		<!--C ontrol effectiveness, have been determined by flying test flights with adaptive turned on -->
-		<define name="G1_ROLL"					value="{ 22.0,  -22.0,  -22.0,  22.0}"/>
-		<define name="G1_PITCH"					value="{ 17.0,   17.0,  -17.0, -17.0}"/>
-		<define name="G1_YAW"					value="{  1.00,  -1.00,   1.00, -1.00}"/>
-		<define name="G1_THRUST"				value="{  -.80,   -.80,   -.80,  -.80}"/>
+		<!-- Virtual input and actuator vector dimensions -->
+		<define name="INDI_OUTPUTS"				value="4"/>
+		<define name="INDI_NUM_ACT"				value="8"/>
+		
+		<!-- Actuator properties -->
+		<define name="ACT_DYN"					value="{  0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1  }"/>
+		<define name="ACT_IS_SERVO"				value="{    0,      0,      0,      0,      0,      0,      0,      0  }"/>
+		<define name="ACT_RATE_LIMIT"			value="{ 9600,   9600,   9600,   9600,   9600,   9600,   9600,   9600  }"/>
+		<define name="ACT_PREF"					value="{    0,      0,      0,      0,      0,      0,      0,      0  }"/>
+		
+		<!-- Control effectiveness -->
+		<define name="G1_ROLL"					value="{ 22.0,  -22.0,  -22.0,   22.0,   22.0,  -22.0,  -22.0,   22.0  }"/>
+		<define name="G1_PITCH"					value="{ 17.0,   17.0,  -17.0,  -17.0,   17.0,   17.0,  -17.0,  -17.0  }"/>
+		<define name="G1_YAW"					value="{  1.00,  -1.00,   1.00,  -1.00,   1.00,  -1.00,   1.00,  -1.00 }"/>
+		<define name="G1_THRUST"				value="{  -.80,   -.80,   -.80,   -.80,   -.80,   -.80,   -.80,   -.80 }"/>
+		<!-- <define name="G1_THRUST"				value="{  -.80,   -.80,   -.80,   -.80,   -.80,   -.80,   -.80,   -.80 }"/> -->
 
 		<!-- Counter torque effect of spinning up a rotor -->
-		<define name="G2"						value="{ 96.0,  -96.0,   96.0, -96.0}"/>
+		<define name="G2"						value="{ 96.0,  -96.0,   96.0,  -96.0,   96.0,  -96.0,   96.0,  -96.0  }"/>
 
 		<!-- Reference acceleration for attitude control -->
 		<define name="REF_ERR_P"				value="300.0"/>
@@ -201,7 +212,7 @@
 		<define name="FILT_CUTOFF"				value="5.0"/>
 
 		<!-- First order actuator dynamics -->
-		<define name="ACT_DYN"					value="{0.1, 0.1, 0.1, 0.1}"/>
+		<!-- <define name="ACT_DYN"					value="{0.1, 0.1, 0.1, 0.1}"/> -->
 
 		<!-- Adaptive Learning Rate -->
 		<define name="USE_ADAPTIVE"				value="FALSE"/>

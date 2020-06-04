@@ -65,7 +65,7 @@
     <file name="qr_solve.c" dir="math/qr_solve"/>
     <file name="r8lib_min.c" dir="math/qr_solve"/>
     <configure name="INDI_OUTPUTS" default="4"/>
-    <configure name="INDI_NUM_ACT" default="4"/>
+    <configure name="INDI_NUM_ACT" default="8"/>
     <define name="INDI_OUTPUTS" value="$(INDI_OUTPUTS)"/>
     <define name="INDI_NUM_ACT" value="$(INDI_NUM_ACT)"/>
     <define name="CA_N_V" value="$(INDI_OUTPUTS)"/>
