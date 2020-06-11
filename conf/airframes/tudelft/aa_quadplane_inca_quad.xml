@@ -35,9 +35,9 @@
 		<module name="telemetry" type="xbee_api"/>
 		<module name="imu" type="aspirin_v2.2"/>
 		<module name="gps" type="datalink"/>
+		<module name="servo_tester"/>
 
 		<module name="stabilization" type="inca">
-			<!-- <define name="INDI_NUM_ACT"			value="4"/> -->
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
@@ -75,7 +75,7 @@
 		<servo name="FRONT_LEFT"		no="0" min="1000" neutral="1100" max="1900"/>
 		<servo name="FRONT_RIGHT"		no="1" min="1000" neutral="1100" max="1900"/>
 		<servo name="BACK_RIGHT"		no="2" min="1000" neutral="1100" max="1900"/>
-		<servo name="BACK_LEFT"			no="3" min="1000" neutral="1100" max="1900"/>
+		<servo name="SERVO_TEST"		no="3" min="1000" neutral="1150" max="1900"/>
 		<servo name="FLYMOTOR"			no="4" min="1000" neutral="1100" max="1900"/>
 		<servo name="AILERONS"			no="5" min="1000" neutral="1470" max="1900"/>
 		<servo name="RUDDERVATOR_LEFT"	no="6" min="1000" neutral="1500" max="2000"/>
@@ -87,24 +87,35 @@
 	<command_laws>
 
 		<!-- Variables indicating if a certain actuator set is active -->
-		<let var="fixed_wing_on"		value="@FORWARD_MODE >= -4800? autopilot_get_motors_on() : 0"/>
-		<let var="quad_on"				value="@FORWARD_MODE <=  4800? autopilot_get_motors_on() : 0"/>
+		<!-- <let var="fixed_wing_on"		value="@FORWARD_MODE >= -4800? autopilot_get_motors_on() : 0"/> -->
+		<!-- <let var="quad_on"				value="@FORWARD_MODE <=  4800? autopilot_get_motors_on() : 0"/> -->
 
 		<!-- Variables used for ruddervator calculations -->
 		<!-- <let var="elevator"				value="@PITCH * 1.5"/> -->
 		<!-- <let var="rudder"				value="@YAW   * 1.2"/> -->
 
 		<!-- Quadcopter actuatortor set -->
-		<set servo="FRONT_LEFT"			value="$quad_on? actuators_pprz[0] : -MAX_PPRZ"/>
-		<set servo="FRONT_RIGHT"		value="$quad_on? actuators_pprz[1] : -MAX_PPRZ"/>
-		<set servo="BACK_RIGHT"			value="$quad_on? actuators_pprz[2] : -MAX_PPRZ"/>
-		<set servo="BACK_LEFT"			value="$quad_on? actuators_pprz[3] : -MAX_PPRZ"/>
+		<set servo="FRONT_LEFT"			value="-MAX_PPRZ"/>
+		<set servo="FRONT_RIGHT"		value="-MAX_PPRZ"/>
+		<set servo="BACK_RIGHT"			value="-MAX_PPRZ"/>
 
 		<!-- Fixed wing actuator set -->
-		<set servo="FLYMOTOR"			value="$fixed_wing_on? actuators_pprz[4] : 0"/>
-		<set servo="AILERONS"			value="$fixed_wing_on? actuators_pprz[5] : 0"/>
-		<set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on? actuators_pprz[6] : 0"/>
-		<set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on? actuators_pprz[7] : 0"/>
+		<set servo="FLYMOTOR"			value="-MAX_PPRZ"/>
+		<set servo="AILERONS"			value="0"/>
+		<set servo="RUDDERVATOR_LEFT"	value="0"/>
+		<set servo="RUDDERVATOR_RIGHT"	value="0"/>
+
+		<!-- Quadcopter actuatortor set -->
+		<!-- <set servo="FRONT_LEFT"			value="$quad_on? actuators_pprz[0] : -MAX_PPRZ"/> -->
+		<!-- <set servo="FRONT_RIGHT"		value="$quad_on? actuators_pprz[1] : -MAX_PPRZ"/> -->
+		<!-- <set servo="BACK_RIGHT"			value="$quad_on? actuators_pprz[2] : -MAX_PPRZ"/> -->
+		<!-- <set servo="BACK_LEFT"			value="$quad_on? actuators_pprz[3] : -MAX_PPRZ"/> -->
+
+		<!-- Fixed wing actuator set -->
+		<!-- <set servo="FLYMOTOR"			value="$fixed_wing_on? actuators_pprz[4] : 0"/> -->
+		<!-- <set servo="AILERONS"			value="$fixed_wing_on? actuators_pprz[5] : 0"/> -->
+		<!-- <set servo="RUDDERVATOR_LEFT"	value="$fixed_wing_on? actuators_pprz[6] : 0"/> -->
+		<!-- <set servo="RUDDERVATOR_RIGHT"	value="$fixed_wing_on? actuators_pprz[7] : 0"/> -->
 		
 		<!-- <set servo="FLYMOTOR"			value="$fixed_wing_on? @THRUST 				  : 0"/> -->
 		<!-- <set servo="AILERONS"			value="$fixed_wing_on? @ROLL * 1.3			  : 0"/> -->
@@ -182,22 +193,22 @@
 		
 		<!-- Virtual input and actuator vector dimensions -->
 		<define name="INDI_OUTPUTS"				value="4"/>
-		<define name="INDI_NUM_ACT"				value="8"/>
+		<define name="INDI_NUM_ACT"				value="4"/>
 		
 		<!-- Actuator properties -->
-		<define name="ACT_DYN"					value="{  0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1,    0.1  }"/>
-		<define name="ACT_IS_SERVO"				value="{    0,      0,      0,      0,      0,      0,      0,      0  }"/>
-		<define name="ACT_RATE_LIMIT"			value="{ 9600,   9600,   9600,   9600,   9600,   9600,   9600,   9600  }"/>
-		<define name="ACT_PREF"					value="{    0,      0,      0,      0,      0,      0,      0,      0  }"/>
+		<define name="ACT_DYN"					value="{   0.1,    0.1,    0.1,    0.1  }"/>
+		<define name="ACT_IS_SERVO"				value="{     0,      0,      0,      0  }"/>
+		<define name="ACT_RATE_LIMIT"			value="{  9600,   9600,   9600,   9600  }"/>
+		<define name="ACT_PREF"					value="{     0,      0,      0,      0  }"/>
 		
 		<!-- Control effectiveness -->
-		<define name="G1_ROLL"					value="{ 22.0,  -22.0,  -22.0,   22.0,   22.0,  -22.0,  -22.0,   22.0  }"/>
-		<define name="G1_PITCH"					value="{ 17.0,   17.0,  -17.0,  -17.0,   17.0,   17.0,  -17.0,  -17.0  }"/>
-		<define name="G1_YAW"					value="{  1.00,  -1.00,   1.00,  -1.00,   1.00,  -1.00,   1.00,  -1.00 }"/>
-		<define name="G1_THRUST"				value="{  -.80,   -.80,   -.80,   -.80,   -.80,   -.80,   -.80,   -.80 }"/>
+		<define name="G1_ROLL"					value="{  22.0,  -22.0,  -22.0,   22.0  }"/>
+		<define name="G1_PITCH"					value="{  17.0,   17.0,  -17.0,  -17.0  }"/>
+		<define name="G1_YAW"					value="{  -1.00,   1.00,  -1.00,   1.00 }"/>
+		<define name="G1_THRUST"				value="{   -.80,   -.80,   -.80,   -.80 }"/>
 
 		<!-- Counter torque effect of spinning up a rotor -->
-		<define name="G2"						value="{ 96.0,  -96.0,   96.0,  -96.0,   96.0,  -96.0,   96.0,  -96.0  }"/>	
+		<define name="G2"						value="{ -96.0,   96.0,  -96.0,   96.0  }"/>
 
 		<!-- Reference acceleration for attitude control -->
 		<define name="REF_ERR_P"				value="300.0"/>
