@@ -2071,10 +2071,10 @@
 
     <message name="INDI_G" id="250">
       <field name="G1_roll" type="float[]" unit="none"/>
-      <field name="G1_pitch" type="float[]" unit="none"/>
-      <field name="G1_yaw" type="float[]" unit="none"/>
-      <field name="G1_thrust" type="float[]" unit="none"/>
-      <field name="G2" type="float[]" unit="none"/>
+      <!-- <field name="G1_pitch" type="float[]" unit="none"/> -->
+      <!-- <field name="G1_yaw" type="float[]" unit="none"/> -->
+      <!-- <field name="G1_thrust" type="float[]" unit="none"/> -->
+      <!-- <field name="G2" type="float[]" unit="none"/> -->
       <field name="u_body" type="float[]" unit="none"/>
     </message>
 

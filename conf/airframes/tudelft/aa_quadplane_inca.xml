@@ -12,7 +12,7 @@
 
 	<firmware name="rotorcraft">
 
-		<target name="ap" board="lisa_mx_2.1_chibios">
+		<target name="ap" board="lisa_mx_2.1">
 			<!-- MPU6000 is configured to output data at 2kHz, but polled at 512Hz PERIODIC_FREQUENCY -->
 		</target>
 

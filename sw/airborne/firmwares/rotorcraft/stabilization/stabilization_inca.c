@@ -205,11 +205,11 @@ static void send_indi_g(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_INDI_G(trans, dev, AC_ID,
                        INDI_NUM_ACT, g1[0],
-                       INDI_NUM_ACT, g1[1],
+                       // INDI_NUM_ACT, g1[1],
                        // INDI_NUM_ACT, g1[2],
-                       INDI_NUM_ACT, g1[3],
-                       // INDI_NUM_ACT, g2);
-                       &speed_body.x);
+                       // INDI_NUM_ACT, g1[3],
+                       // INDI_NUM_ACT, g2,
+                       1, &speed_body.x);
 }
 
 static void send_indi_v(struct transport_tx *trans, struct link_device *dev)
