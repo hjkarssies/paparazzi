@@ -30,8 +30,10 @@
       <define name="MAX_R" value="120.0" description="max yaw rate" unit="deg/s"/>
       <define name="FILT_CUTOFF" value="8.0" description="second order cutoff parameter"/>
       <define name="ESTIMATION_FILT_CUTOFF" value="8.0" description="second order cutoff parameter"/>
-      <define name="ACT_DYN" value="{0.1, 0.1, 0.1, 0.1}" description="actuator dynamics"/>
-      <define name="ACT_IS_SERVO" value="{0,0,0,0}" description="1 for every actuator that is a servo"/>
+      <define name="ACT_DYN" value="{30.0, 30.0, 30.0, 30.0}" description="time constant tau of first order actuator dynamics"/>
+      <define name="ACT_IS_SERVO" value="{0,0,0,0}" description="1 for every actuator that is a servo (determines wether negative values are possible)"/>
+      <define name="ACT_IS_THRUST" value="{1,1,1,1}" description="1 for every actuator that is used for thrust"/>
+      <define name="ACT_IS_SURFACE" value="{0,0,0,0}" description="1 for every actuator that is a control surface and needs to be scaled with u_b^2"/>
       <define name="ACT_RATE_LIMIT" value="{9600,9600,9600,9600}" description="rate limit in PPRZ units per timestep (depends on control frequency)"/>
       <define name="ACT_PREF" value="{0.0, 0.0, 0.0, 0.0}" description="preferred (low energy) actuator value. Important when the system is over-determined!"/>
       <define name="USE_ADAPTIVE" value="FALSE|TRUE" description="enable adaptive gains"/>
@@ -65,7 +67,7 @@
     <file name="qr_solve.c" dir="math/qr_solve"/>
     <file name="r8lib_min.c" dir="math/qr_solve"/>
     <configure name="INDI_OUTPUTS" default="4"/>
-    <configure name="INDI_NUM_ACT" default="4"/>
+    <configure name="INDI_NUM_ACT" default="7"/>
     <define name="INDI_OUTPUTS" value="$(INDI_OUTPUTS)"/>
     <define name="INDI_NUM_ACT" value="$(INDI_NUM_ACT)"/>
     <define name="CA_N_V" value="$(INDI_OUTPUTS)"/>
