@@ -41,6 +41,8 @@
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
+		<module name="guidance" type="hybrid"/>
+
 		<module name="ahrs" type="int_cmpl_quat">
 			<configure	name="USE_MAGNETOMETER"					value="FALSE"/>
 			<define		name="AHRS_GRAVITY_HEURISTIC_FACTOR"	value="0"/>
@@ -232,6 +234,23 @@
 		<define name="WLS_PRIORITIES"			value="{100, 100, 1, 1000}"/>
 
 	</section>
+
+	<!-- <section name="GUIDANCE_V" prefix="GUIDANCE_V_"> -->
+		<!-- <define name="HOVER_KP"					value="150"/> -->
+		<!-- <define name="HOVER_KD"					value="80"/> -->
+		<!-- <define name="HOVER_KI"					value="20"/> -->
+		<!-- <define name="NOMINAL_HOVER_THROTTLE"	value="0.5"/> -->
+		<!-- <define name="ADAPT_THROTTLE_ENABLED"	value="TRUE"/> -->
+	<!-- </section> -->
+
+	<!-- <section name="GUIDANCE_H" prefix="GUIDANCE_H_"> -->
+		<!-- <define name="MAX_BANK"			value="20" unit="deg"/> -->
+		<!-- <define name="USE_SPEED_REF"	value="TRUE"/> -->
+		<!-- <define name="PGAIN"			value="50"/> -->
+		<!-- <define name="DGAIN"			value="100"/> -->
+		<!-- <define name="AGAIN"			value="70"/> -->
+		<!-- <define name="IGAIN"			value="20"/> -->
+	<!-- </section> -->
 
 	<section name="GUIDANCE_V" prefix="GUIDANCE_V_">
 		<define name="HOVER_KP"					value="150"/>
