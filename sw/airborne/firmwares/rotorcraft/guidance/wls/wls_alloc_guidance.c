@@ -35,7 +35,7 @@
  * MAVLab Delft University of Technology
  */
 
-#include "wls_alloc.h"
+#include "wls_alloc_guidance.h"
 #include <stdio.h>
 #include "std.h"
 
@@ -52,15 +52,15 @@ void print_in_and_outputs_guidance(int n_c, int n_free, float** A_free_ptr, floa
 #define WLS_VERBOSE FALSE
 
 // Problem size needs to be predefined to avoid having to use VLAs
-#ifndef CA_N_V
-#error CA_N_V needs to be defined!
+#ifndef CA_N_V_GUIDANCE
+#error CA_N_V_GUIDANCE needs to be defined!
 #endif
 
-#ifndef CA_N_U
-#error CA_N_U needs to be defined!
+#ifndef CA_N_U_GUIDANCE
+#error CA_N_U_GUIDANCE needs to be defined!
 #endif
 
-#define CA_N_C  (CA_N_U+CA_N_V)
+#define CA_N_C_GUIDANCE  (CA_N_U_GUIDANCE+CA_N_V_GUIDANCE)
 
 /**
  * @brief Wrapper for qr solve
@@ -71,7 +71,7 @@ void print_in_and_outputs_guidance(int n_c, int n_free, float** A_free_ptr, floa
  * @param m number of rows
  * @param n number of columns
  */
-void qr_solve_wrapper(int m, int n, float** A, float* b, float* x) {
+void qr_solve_wrapper_guidance(int m, int n, float** A, float* b, float* x) {
   float in[m * n];
   // convert A to 1d array
   int k = 0;
@@ -109,42 +109,42 @@ void qr_solve_wrapper(int m, int n, float** A, float* b, float* x) {
  *
  * @return Number of iterations, -1 upon failure
  */
-int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
+int wls_alloc_guidance(float* u, float* v, float* umin, float* umax, float** B,
     float* u_guess, float* W_init, float* Wv, float* Wu, float* up,
     float gamma_sq, int imax) {
   // allocate variables, use defaults where parameters are set to 0
   if(!gamma_sq) gamma_sq = 100000;
   if(!imax) imax = 100;
 
-  int n_c = CA_N_C;
-  int n_u = CA_N_U;
-  int n_v = CA_N_V;
+  int n_c = CA_N_C_GUIDANCE;
+  int n_u = CA_N_U_GUIDANCE;
+  int n_v = CA_N_V_GUIDANCE;
 
-  float A[CA_N_C][CA_N_U];
-  float A_free[CA_N_C][CA_N_U];
+  float A[CA_N_C_GUIDANCE][CA_N_U_GUIDANCE];
+  float A_free[CA_N_C_GUIDANCE][CA_N_U_GUIDANCE];
 
   // Create a pointer array to the rows of A_free
   // such that we can pass it to a function
-  float * A_free_ptr[CA_N_C];
+  float * A_free_ptr[CA_N_C_GUIDANCE];
   for(int i = 0; i < n_c; i++)
     A_free_ptr[i] = A_free[i];
 
-  float b[CA_N_C];
-  float d[CA_N_C];
+  float b[CA_N_C_GUIDANCE];
+  float d[CA_N_C_GUIDANCE];
 
-  int free_index[CA_N_U];
-  int free_index_lookup[CA_N_U];
+  int free_index[CA_N_U_GUIDANCE];
+  int free_index_lookup[CA_N_U_GUIDANCE];
   int n_free = 0;
   int free_chk = -1;
 
   int iter = 0;
-  float p_free[CA_N_U];
-  float p[CA_N_U];
-  float u_opt[CA_N_U];
-  int infeasible_index[CA_N_U] UNUSED;
+  float p_free[CA_N_U_GUIDANCE];
+  float p[CA_N_U_GUIDANCE];
+  float u_opt[CA_N_U_GUIDANCE];
+  int infeasible_index[CA_N_U_GUIDANCE] UNUSED;
   int n_infeasible = 0;
-  float lambda[CA_N_U];
-  float W[CA_N_U];
+  float lambda[CA_N_U_GUIDANCE];
+  float W[CA_N_U_GUIDANCE];
 
   // Initialize u and the working set, if provided from input
   if (!u_guess) {
@@ -209,7 +209,7 @@ int wls_alloc(float* u, float* v, float* umin, float* umax, float** B,
       // Still free variables left, calculate corresponding solution
 
       // use a solver to find the solution to A_free*p_free = d
-      qr_solve_wrapper(n_c, n_free, A_free_ptr, d, p_free);
+      qr_solve_wrapper_guidance(n_c, n_free, A_free_ptr, d, p_free);
 
       //print results current step
 #if WLS_VERBOSE

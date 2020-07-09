@@ -55,8 +55,12 @@ float indi_v[INDI_OUTPUTS];
 float indi_v_abs[INDI_OUTPUTS];
 float *Bwls[INDI_OUTPUTS];
 int num_iter = 0;
-int num_cycle = 1;     // Cycle count (resets every nth cycle)
-int run_nth_cycle = 2; // Run every nth cycle
+int num_cycle = 1; // Cycle count (resets every nth cycle)
+#ifdef STABILIZATION_INDI_NTH_CYCLE
+int run_nth_cycle = STABILIZATION_INDI_NTH_CYCLE; // Run every nth cycle
+#else
+int run_nth_cycle = 1; // Run every nth cycle
+#endif
 struct FloatVect3 speed_body;
 
 static void lms_estimation(void);
@@ -113,7 +117,7 @@ float act_pref[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_PREF;
 float act_pref[INDI_NUM_ACT] = {0.0};
 #endif
 
-float act_dyn_tau[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_DYN;
+float act_dyn_tau[INDI_NUM_ACT] = STABILIZATION_INDI_ACT_DYN_TAU;
 float act_dyn[INDI_NUM_ACT];
 
 /** Maximum rate you can request in RC rate mode (rad/s)*/
@@ -142,6 +146,7 @@ float angular_acceleration[3] = {0., 0., 0.};
 float actuator_state[INDI_NUM_ACT];
 float indi_u[INDI_NUM_ACT];
 float indi_du[INDI_NUM_ACT];
+float indi_du_prev[INDI_NUM_ACT];
 float g2_times_du;
 
 // variables needed for estimation
@@ -259,6 +264,7 @@ void stabilization_indi_init(void)
   float_vect_zero(estimation_rate_d, INDI_NUM_ACT);
   float_vect_zero(estimation_rate_dd, INDI_NUM_ACT);
   float_vect_zero(actuator_state_filt_vect, INDI_NUM_ACT);
+  float_vect_zero(indi_du_prev, INDI_NUM_ACT);  
 
   //Calculate G1G2_PSEUDO_INVERSE
   calc_g1g2_pseudo_inv();
@@ -290,7 +296,7 @@ void stabilization_indi_init(void)
   
   // Calculate actuator alpha from first order time constant
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    act_dyn[i] = 1 - exp(-act_dyn_tau[i] / PERIODIC_FREQUENCY);
+    act_dyn[i] = 1 - exp(-act_dyn_tau[i] / (PERIODIC_FREQUENCY / run_nth_cycle));
   }
 
 #if PERIODIC_TELEMETRY
@@ -484,8 +490,8 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   }
 
   // WLS Control Allocator
-  num_iter =
-    wls_alloc(indi_du, indi_v, du_min, du_max, Bwls, 0, 0, Wv, Wu, du_pref, 10000, 10);
+  wls_alloc(indi_du, indi_v, du_min, du_max, Bwls, indi_du_prev, 0, Wv, Wu, du_pref, 10000, 10);
+  float_vect_copy(indi_du_prev, indi_du, INDI_NUM_ACT);
 #endif
 
   // Add the increments to the actuators
@@ -571,10 +577,10 @@ void stabilization_indi_run(bool in_flight, bool rate_control)
 
   /* compute the INDI command once every run_nth_cycle cycles*/
   if (num_cycle >= run_nth_cycle) {
-	num_cycle = 1;
-	stabilization_indi_calc_cmd(&att_err, rate_control, in_flight);
+    num_cycle = 1;
+    stabilization_indi_calc_cmd(&att_err, rate_control, in_flight);
   } else {
-	num_cycle += 1;
+    num_cycle += 1;
   }
 
   // Set the stab_cmd to 42 to indicate that it is not used
@@ -885,10 +891,8 @@ void scale_surface_effectiveness(void)
       int8_t i;
       for (i = 0; i < INDI_OUTPUTS; i++) {
 		g1_scaled[i][j] = g1_init[i][j] * speed_body.x * speed_body.x;
-		// if (abs(g1_scaled[i][j]) < 0.001) {g1_scaled[i][j] = 0.001;}
 	  }
 	  g2_scaled[j] = g2_init[j] * speed_body.x * speed_body.x;
-	  // if (abs(g2_scaled[j]) < 0.001) {g2_scaled[j] = 0.001;}
 	}
 	
 	// If actuator is not a control surface, don't scale

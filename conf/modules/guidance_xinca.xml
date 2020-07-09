@@ -3,12 +3,34 @@
 <module name="guidance_xinca" dir="guidance">
   <doc>
     <description>
-      Guidance controller for rotorcraft using XINCA
+      Guidance controller for rotorcraft using XINCA (extension of guidance_indi)
     </description>
+
+    <configure name="XINCA_OUTPUTS" default="3"/>
+    <configure name="XINCA_NUM_ACT" default="4"/>
+	
+    <section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
+	  <define name="C_L_ALPHA" value="1.55" description="lift over angle of attack"/>
+	  <define name="C_X_TAIL_ROTOR" value="0.002" description="tail rotor effectiveness"/>
+	  <define name="C_Z_THRUST" value="0.0032" description="thrust effectiveness"/>
+	  <define name="MASS" value="3.0" description="airframe mass (kg)"/>
+	  <define name="WING_SURFACE" value="0.24" description="wing surface area in m^2"/>
+	  <define name="RHO" value="1.225" description="air density"/>
+	  <define name="GRAVITY" value="9.81" description="gravitational acceleration"/>
+	  <define name="ACT_X_TAU" value="60" description="ttime constant tau of first order actuator dynamics in x direction"/>
+	  <define name="ACT_Z_TAU" value="30" description="ttime constant tau of first order actuator dynamics in z direction"/>
+	  <define name="U_PREF" value="{0, 0, 0, 0}" description="preferred pitch and roll angles and tail rotor and thrust inputs"/>
+	  <define name="U_PREF" value="{0, 0, 0, 0}" description="preferred pitch and roll angles and tail rotor and thrust inputs"/>
+	  <define name="W_ACC" value="{10, 10, 1}" description="weights to prioritise certain accelerations over others"/>
+	  <define name="W_ACT" value="{1, 1, 10, 10}" description="weights to prioritise certain 'actuators' over other"/>
+	  <define name="GAMMA" value="10000" description="factor to prioritise one subobjective over the other"/>
+	  <define name="H_THRES" value="30" description="minimum altitude for tail rotor use"/>
+    </section>
+	
   </doc>
   <settings>
     <dl_settings>
-      <dl_settings NAME="guidance_indi">
+      <dl_settings NAME="guidance_xinca">
         <dl_setting var="guidance_indi_pos_gain" min="0" step="0.1" max="10.0" shortname="kp_p" param="GUIDANCE_INDI_POS_GAIN" persistent="true"/>
         <dl_setting var="guidance_indi_speed_gain" min="0" step="0.1" max="10.0" shortname="kp_p" param="GUIDANCE_INDI_SPEED_GAIN" persistent="true"/>
         <dl_setting var="guidance_indi_max_bank" min="0" step="0.1" max="80.0" shortname="max_bank" param="GUIDANCE_H_MAX_BANK"/>
@@ -22,6 +44,15 @@
   <init fun="guidance_indi_enter()"/>
   <makefile target="ap|nps" firmware="rotorcraft">
     <file name="guidance_xinca.c" dir="$(SRC_FIRMWARE)/guidance"/>
+    <file name="wls_alloc_guidance.c" dir="$(SRC_FIRMWARE)/guidance/wls"/>
+    <file name="qr_solve.c" dir="math/qr_solve"/>
+    <file name="r8lib_min.c" dir="math/qr_solve"/>
     <define name="GUIDANCE_INDI" value="TRUE"/>
+    <configure name="XINCA_OUTPUTS" default="3"/>
+    <configure name="XINCA_NUM_ACT" default="4"/>
+    <define name="XINCA_OUTPUTS" value="$(INDI_OUTPUTS)"/>
+    <define name="XINCA_NUM_ACT" value="$(INDI_NUM_ACT)"/>
+    <define name="CA_N_V_GUIDANCE" value="3"/>
+    <define name="CA_N_U_GUIDANCE" value="4"/>
   </makefile>
 </module>

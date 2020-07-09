@@ -345,7 +345,7 @@ void stabilization_indi_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t heading)
  *
  * Function that calculates the INDI commands
  */
-static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_control, bool in_flight)
+static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, boolean rate_control, boolean in_flight)
 {
 
   struct FloatRates rate_ref;

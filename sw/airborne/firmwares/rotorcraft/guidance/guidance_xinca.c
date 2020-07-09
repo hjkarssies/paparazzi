@@ -35,6 +35,7 @@
 #include "firmwares/rotorcraft/guidance/guidance_xinca.h"
 #include "subsystems/ins/ins_int.h"
 #include "subsystems/radio_control.h"
+#include "subsystems/actuators.h"
 #include "state.h"
 #include "subsystems/imu.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
@@ -47,6 +48,7 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "filters/low_pass_filter.h"
 #include "subsystems/abi.h"
+#include "firmwares/rotorcraft/guidance/wls/wls_alloc_guidance.h"
 
 // The acceleration reference is calculated with these gains. If you use GPS,
 // they are probably limited by the update rate of your GPS. The default
@@ -74,19 +76,8 @@ bool indi_accel_sp_set_2d = false;
 bool indi_accel_sp_set_3d = false;
 
 struct FloatVect3 sp_accel = {0.0, 0.0, 0.0};
-#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
-float thrust_in_specific_force_gain = GUIDANCE_INDI_SPECIFIC_FORCE_GAIN;
-static void guidance_indi_filter_thrust(void);
 
-#ifndef GUIDANCE_INDI_THRUST_DYNAMICS
-#ifndef STABILIZATION_INDI_ACT_DYN_P
-#error "You need to define GUIDANCE_INDI_THRUST_DYNAMICS to be able to use indi vertical control"
-#else // assume that the same actuators are used for thrust as for roll (e.g. quadrotor)
-#define GUIDANCE_INDI_THRUST_DYNAMICS STABILIZATION_INDI_ACT_DYN_P
-#endif
-#endif //GUIDANCE_INDI_THRUST_DYNAMICS
-
-#endif //GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
+static void guidance_indi_filter_actuators(void);
 
 #ifndef GUIDANCE_INDI_FILTER_CUTOFF
 #ifdef STABILIZATION_INDI_FILT_CUTOFF
@@ -96,15 +87,17 @@ static void guidance_indi_filter_thrust(void);
 #endif
 #endif
 
-float thrust_act = 0;
+float act_x = 0;
+float act_z = 0;
 Butterworth2LowPass filt_accel_ned[3];
 Butterworth2LowPass roll_filt;
 Butterworth2LowPass pitch_filt;
-Butterworth2LowPass thrust_filt;
+Butterworth2LowPass act_x_filt;
+Butterworth2LowPass act_z_filt;
 
 struct FloatMat33 Ga;
 struct FloatMat33 Ga_inv;
-struct FloatVect3 control_increment; // [dtheta, dphi, dthrust]
+float control_increment[XINCA_NUM_ACT]; // [dtheta, dphi, dact_z, dact_x]
 
 float filter_cutoff = GUIDANCE_INDI_FILTER_CUTOFF;
 float guidance_indi_max_bank = GUIDANCE_H_MAX_BANK;
@@ -113,11 +106,97 @@ float time_of_accel_sp_2d = 0.0;
 float time_of_accel_sp_3d = 0.0;
 
 struct FloatEulers guidance_euler_cmd;
-float thrust_in;
+float act_x_in;
+float act_z_in;
+
+//XINCA specific paramaters
+int num_iter_xinca = 0;
+int num_cycle_xinca = 1; // Cycle count (resets every nth cycle)
+#ifdef STABILIZATION_XINCA_NTH_CYCLE
+int run_nth_cycle_xinca = STABILIZATION_XINCA_NTH_CYCLE; // Run every nth cycle
+#else
+int run_nth_cycle_xinca = 1; // Run every nth cycle
+#endif
+
+float G[XINCA_OUTPUTS][XINCA_NUM_ACT];
+float *B[INDI_OUTPUTS];
+float v_xinca[XINCA_OUTPUTS];
+float du_xinca[XINCA_NUM_ACT];
+float du_min_xinca[XINCA_NUM_ACT];
+float du_max_xinca[XINCA_NUM_ACT];
+float du_pref_xinca[XINCA_NUM_ACT];
+float du_prev_xinca[XINCA_NUM_ACT];
+
+float c_l_alpha = GUIDANCE_XINCA_C_L_ALPHA;
+float c_x_tail_rotor = GUIDANCE_XINCA_C_X_TAIL_ROTOR;
+float c_z_thrust = GUIDANCE_XINCA_C_Z_THRUST;
+float mass = GUIDANCE_XINCA_MASS;
+float wing_surface = GUIDANCE_XINCA_WING_SURFACE;
+
+#ifdef GUIDANCE_XINCA_RHO
+float rho = GUIDANCE_XINCA_RHO;
+#else
+float rho = 1.225;
+#endif
+
+#ifdef GUIDANCE_XINCA_GRAVITY
+float gravity = GUIDANCE_XINCA_GRAVITY;
+#else
+float gravity = 9.81;
+#endif
+
+#ifdef GUIDANCE_XINCA_ACT_X_TAU
+float act_x_tau = GUIDANCE_XINCA_ACT_X_TAU;
+#else
+float act_x_tau = 60;
+#endif
+float act_x_dyn;
+
+#ifdef GUIDANCE_XINCA_ACT_Z_TAU
+float act_z_tau = GUIDANCE_XINCA_ACT_Z_TAU;
+#else
+float act_z_tau = 30;
+#endif
+float act_z_dyn;
+
+#ifdef GUIDANCE_XINCA_U_PREF
+float u_pref[XINCA_NUM_ACT] = GUIDANCE_XINCA_U_PREF;
+#else
+float u_pref[XINCA_NUM_ACT] = {0, 0, 0, 0};
+#endif
+
+#ifdef GUIDANCE_XINCA_W_ACC
+float W_acc[XINCA_OUTPUTS] = GUIDANCE_XINCA_W_ACC;
+#else
+float W_acc[XINCA_OUTPUTS] = {10, 10, 1};
+#endif
+
+#ifdef GUIDANCE_XINCA_W_ACT
+float W_act[XINCA_NUM_ACT] = GUIDANCE_XINCA_W_ACT;
+#else
+float W_act[XINCA_NUM_ACT] = {1, 1, 10, 10};
+#endif
+
+#ifdef GUIDANCE_XINCA_GAMMA
+float gamma_sq = GUIDANCE_XINCA_GAMMA;
+#else
+float gamma_sq = 10000;
+#endif
+
+#ifdef GUIDANCE_XINCA_MAX_ITER
+float max_iter_xinca = GUIDANCE_XINCA_MAX_ITER;
+#else
+float max_iter_xinca = 10;
+#endif
+
+#ifdef GUIDANCE_XINCA_H_THRES
+float h_thres = GUIDANCE_XINCA_H_THRES;
+#else
+float h_thres = 0.3;
+#endif
 
 static void guidance_indi_propagate_filters(struct FloatEulers *eulers);
-static void guidance_indi_calcG(struct FloatMat33 *Gmat);
-static void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz);
+static void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz);
 
 /**
  * @brief Init function
@@ -133,8 +212,15 @@ void guidance_indi_init(void)
  */
 void guidance_indi_enter(void)
 {
-  thrust_in = stabilization_cmd[COMMAND_THRUST];
-  thrust_act = thrust_in;
+  act_x_dyn = 1 - exp(-act_x_tau / (PERIODIC_FREQUENCY / run_nth_cycle_xinca));
+  act_x_in = stabilization_cmd[COMMAND_PITCH];
+  act_x = act_x_in;
+
+  act_z_dyn = 1 - exp(-act_z_tau / (PERIODIC_FREQUENCY / run_nth_cycle_xinca));
+  act_z_in = stabilization_cmd[COMMAND_THRUST];
+  act_z = act_z_in;
+
+  float_vect_zero(du_prev_xinca, INDI_NUM_ACT);
 
   float tau = 1.0 / (2.0 * M_PI * filter_cutoff);
   float sample_time = 1.0 / PERIODIC_FREQUENCY;
@@ -143,7 +229,8 @@ void guidance_indi_enter(void)
   }
   init_butterworth_2_low_pass(&roll_filt, tau, sample_time, stateGetNedToBodyEulers_f()->phi);
   init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, stateGetNedToBodyEulers_f()->theta);
-  init_butterworth_2_low_pass(&thrust_filt, tau, sample_time, thrust_in);
+  init_butterworth_2_low_pass(&act_x_filt, tau, sample_time, act_x_in);
+  init_butterworth_2_low_pass(&act_z_filt, tau, sample_time, act_z_in);
 }
 
 /**
@@ -153,6 +240,15 @@ void guidance_indi_enter(void)
  */
 void guidance_indi_run(float *heading_sp)
 {
+
+  /* Only compute the XINCA command once every run_nth_cycle cycles*/
+  if (num_cycle_xinca >= run_nth_cycle_xinca) {
+    num_cycle_xinca = 1;
+  } else {
+    num_cycle_xinca += 1;
+    return;
+  }
+
   struct FloatEulers eulers_yxz;
   struct FloatQuat * statequat = stateGetNedToBodyQuat_f();
   float_eulers_of_quat_yxz(&eulers_yxz, statequat);
@@ -209,51 +305,67 @@ void guidance_indi_run(float *heading_sp)
 #endif
 
   //Calculate matrix of partial derivatives
-  guidance_indi_calcG_yxz(&Ga, &eulers_yxz);
+  guidance_xinca_calcG_yxz(&eulers_yxz);
 
-  //Invert this matrix
-  MAT33_INV(Ga_inv, Ga);
-
-  struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0], sp_accel.y - filt_accel_ned[1].o[0], sp_accel.z - filt_accel_ned[2].o[0]};
+  struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0],sp_accel.y - filt_accel_ned[1].o[0], sp_accel.z - filt_accel_ned[2].o[0]};
 
   //Bound the acceleration error so that the linearization still holds
   Bound(a_diff.x, -6.0, 6.0);
   Bound(a_diff.y, -6.0, 6.0);
   Bound(a_diff.z, -9.0, 9.0);
 
-  //If the thrust to specific force ratio has been defined, include vertical control
-  //else ignore the vertical acceleration error
-#ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
-#ifndef STABILIZATION_ATTITUDE_INDI_FULL
-  a_diff.z = 0.0;
-#endif
-#endif
+  // Minimim increment in pitch angle, roll angle, thrust and tail rotor input
+  du_min_xinca[0] = -guidance_indi_max_bank - pitch_filt.o[0];
+  du_min_xinca[1] = -guidance_indi_max_bank - roll_filt.o[0];
+  du_min_xinca[2] = -act_x_filt.o[0];
+  du_min_xinca[3] = -act_z_filt.o[0];
 
-  //Calculate roll,pitch and thrust command
-  MAT33_VECT3_MUL(control_increment, Ga_inv, a_diff);
+  // Maximum increment in pitch angle, roll angle, thrust and tail rotor input
+  du_max_xinca[0] = guidance_indi_max_bank - pitch_filt.o[0];
+  du_max_xinca[1] = guidance_indi_max_bank - roll_filt.o[0];
+  du_max_xinca[2] = MAX_PPRZ - act_x_filt.o[0];
+  du_max_xinca[3] = MAX_PPRZ - act_z_filt.o[0];
 
-  AbiSendMsgTHRUST(THRUST_INCREMENT_ID, control_increment.z);
+  // Preferred increment in pitch angle, roll angle, thrust and tail rotor input
+  du_pref_xinca[0] = u_pref[0] - pitch_filt.o[0];
+  du_pref_xinca[1] = u_pref[1] - roll_filt.o[0];
+  du_pref_xinca[2] = u_pref[2] - act_x_filt.o[0];
+  du_pref_xinca[3] = u_pref[3] - act_z_filt.o[0];
 
-  guidance_euler_cmd.theta = pitch_filt.o[0] + control_increment.x;
-  guidance_euler_cmd.phi = roll_filt.o[0] + control_increment.y;
+  // Calculate virtual input
+  v_xinca[0] = a_diff.x;
+  v_xinca[1] = a_diff.y;
+  v_xinca[2] = a_diff.z;
+
+  // WLS Control Allocator
+  wls_alloc_guidance(du_xinca, v_xinca, du_min_xinca, du_max_xinca,
+      B, du_pref_xinca, 0, W_acc, W_act, du_pref_xinca, gamma_sq, max_iter_xinca);
+  float_vect_copy(du_pref_xinca, du_xinca, XINCA_NUM_ACT);
+
+  AbiSendMsgTHRUST(THRUST_INCREMENT_ID, control_increment[2]);
+
+  // Add increment in angles
+  guidance_euler_cmd.theta = pitch_filt.o[0] + control_increment[0];
+  guidance_euler_cmd.phi = roll_filt.o[0] + control_increment[1];
   guidance_euler_cmd.psi = *heading_sp;
 
-#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
-  guidance_indi_filter_thrust();
+  guidance_indi_filter_actuators();
 
-  //Add the increment in specific force * specific_force_to_thrust_gain to the filtered thrust
-  thrust_in = thrust_filt.o[0] + control_increment.z * thrust_in_specific_force_gain;
-  Bound(thrust_in, 0, 9600);
+  //Add increment in thrust and tail rotor input
+  act_x_in = act_x_filt.o[0] + control_increment[3];
+  Bound(act_x_in, 0, 9600);
+
+  act_z_in = act_z_filt.o[0] + control_increment[2];
+  Bound(act_z_in, 0, 9600);
 
 #if GUIDANCE_INDI_RC_DEBUG
   if (radio_control.values[RADIO_THROTTLE] < 300) {
-    thrust_in = 0;
+    act_z_in = 0;
   }
 #endif
 
   //Overwrite the thrust command from guidance_v
-  stabilization_cmd[COMMAND_THRUST] = thrust_in;
-#endif
+  stabilization_cmd[COMMAND_THRUST] = act_z_in;
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
@@ -263,21 +375,29 @@ void guidance_indi_run(float *heading_sp)
   struct FloatQuat q_sp;
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+
+  //Commit tail rotor command
+  if (stateGetPositionNed_i()->z > h_thres) {
+    actuators_pprz[6] = act_x_in;
+  } else {
+    actuators_pprz[6] = -MAX_PPRZ;
+  }
+  
 }
 
-#ifdef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 /**
  * Filter the thrust, such that it corresponds to the filtered acceleration
  */
-void guidance_indi_filter_thrust(void)
+void guidance_indi_filter_actuators(void)
 {
   // Actuator dynamics
-  thrust_act = thrust_act + GUIDANCE_INDI_THRUST_DYNAMICS * (thrust_in - thrust_act);
+  act_x = act_x + act_x_dyn * (act_x_in - act_x);
+  act_z = act_z + act_z_dyn * (act_z_in - act_z);
 
-  // same filter as for the acceleration
-  update_butterworth_2_low_pass(&thrust_filt, thrust_act);
+  // Same filter as for the acceleration
+  update_butterworth_2_low_pass(&act_x_filt, act_x);
+  update_butterworth_2_low_pass(&act_z_filt, act_z);
 }
-#endif
 
 /**
  * Low pass the accelerometer measurements to remove noise from vibrations.
@@ -302,57 +422,61 @@ void guidance_indi_propagate_filters(struct FloatEulers *eulers)
  * w.r.t. the NED accelerations for YXZ eulers
  * ddx = G*[dtheta,dphi,dT]
  */
-void guidance_indi_calcG_yxz(struct FloatMat33 *Gmat, struct FloatEulers *euler_yxz)
+void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
 {
 
+  struct FloatRMat *ned_to_body_rmat = stateGetNedToBodyRMat_f();
+
+  // Get vertical body acceleration
+  struct FloatVect3 a_ned = {filt_accel_ned[0].o[0], filt_accel_ned[1].o[0], filt_accel_ned[2].o[0]};
+  struct FloatVect3 a_body;
+  float_rmat_vmult(&a_body, ned_to_body_rmat, &a_ned);
+
+  // Get body velocity velocity (ideally airspeed velocity)
+  struct NedCoor_f *ned_speed_f = stateGetSpeedNed_f();
+  struct FloatVect3 speed_ned = {ned_speed_f->x, ned_speed_f->y, ned_speed_f->z};
+  struct FloatVect3 speed_body;
+  float_rmat_vmult(&speed_body, ned_to_body_rmat, &speed_ned);
+
+  // Upward estimate minus gravity is an estimate of the thrust force
+  float T = a_body.z - gravity;
+
+  // Get current attitude angles
   float sphi = sinf(euler_yxz->phi);
   float cphi = cosf(euler_yxz->phi);
   float stheta = sinf(euler_yxz->theta);
   float ctheta = cosf(euler_yxz->theta);
-  //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T = -9.81;
 
-  RMAT_ELMT(*Gmat, 0, 0) = ctheta * cphi * T;
-  RMAT_ELMT(*Gmat, 1, 0) = 0;
-  RMAT_ELMT(*Gmat, 2, 0) = -stheta * cphi * T;
-  RMAT_ELMT(*Gmat, 0, 1) = -stheta * sphi * T;
-  RMAT_ELMT(*Gmat, 1, 1) = -cphi * T;
-  RMAT_ELMT(*Gmat, 2, 1) = -ctheta * sphi * T;
-  RMAT_ELMT(*Gmat, 0, 2) = stheta * cphi;
-  RMAT_ELMT(*Gmat, 1, 2) = -sphi;
-  RMAT_ELMT(*Gmat, 2, 2) = ctheta * cphi;
-}
+  // Calculate matrix components
+  G[0][0] = ctheta * cphi * T;
+  G[1][0] = 0;
+  G[2][0] = c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface
+            - stheta * cphi * T;
+  G[0][1] = -stheta * sphi * T;
+  G[1][1] = -cphi * T;
+  G[2][1] = -ctheta * sphi * T;
+  G[0][2] = stheta * cphi;
+  G[1][2] = -sphi;
+  G[2][2] = ctheta * cphi;
+  G[0][2] = c_z_thrust * stheta * cphi;
+  G[1][2] = c_z_thrust * -sphi;
+  G[2][2] = c_z_thrust * ctheta * cphi;
 
-/**
- * @param Gmat array to write the matrix to [3x3]
- *
- * Calculate the matrix of partial derivatives of the roll, pitch and thrust.
- * w.r.t. the NED accelerations for ZYX eulers
- * ddx = G*[dtheta,dphi,dT]
- */
-UNUSED void guidance_indi_calcG(struct FloatMat33 *Gmat)
-{
+  // Only use tail rotor above threshold height
+  if (stateGetPositionNed_i()->z > h_thres) {
+    G[0][3] = c_x_tail_rotor * ctheta / XINCA_G_SCALING;
+    G[1][3] = 0;
+    G[2][3] = c_x_tail_rotor * stheta / XINCA_G_SCALING;
+  } else {
+    G[0][3] = 0;
+    G[1][3] = 0;
+    G[2][3] = 0;
+  }
 
-  struct FloatEulers *euler = stateGetNedToBodyEulers_f();
+  for (int i = 0; i < XINCA_OUTPUTS; i++) {
+    B[i] = g1g2[i];
+  }
 
-  float sphi = sinf(euler->phi);
-  float cphi = cosf(euler->phi);
-  float stheta = sinf(euler->theta);
-  float ctheta = cosf(euler->theta);
-  float spsi = sinf(euler->psi);
-  float cpsi = cosf(euler->psi);
-  //minus gravity is a guesstimate of the thrust force, thrust measurement would be better
-  float T = -9.81;
-
-  RMAT_ELMT(*Gmat, 0, 0) = (cphi * spsi - sphi * cpsi * stheta) * T;
-  RMAT_ELMT(*Gmat, 1, 0) = (-sphi * spsi * stheta - cpsi * cphi) * T;
-  RMAT_ELMT(*Gmat, 2, 0) = -ctheta * sphi * T;
-  RMAT_ELMT(*Gmat, 0, 1) = (cphi * cpsi * ctheta) * T;
-  RMAT_ELMT(*Gmat, 1, 1) = (cphi * spsi * ctheta) * T;
-  RMAT_ELMT(*Gmat, 2, 1) = -stheta * cphi * T;
-  RMAT_ELMT(*Gmat, 0, 2) = sphi * spsi + cphi * cpsi * stheta;
-  RMAT_ELMT(*Gmat, 1, 2) = cphi * spsi * stheta - cpsi * sphi;
-  RMAT_ELMT(*Gmat, 2, 2) = cphi * ctheta;
 }
 
 /**
