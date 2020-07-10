@@ -450,7 +450,7 @@ void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
   // Calculate matrix components
   G[0][0] = ctheta * cphi * T;
   G[1][0] = 0;
-  G[2][0] = c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface
+  G[2][0] = c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface / mass
             - stheta * cphi * T;
   G[0][1] = -stheta * sphi * T;
   G[1][1] = -cphi * T;

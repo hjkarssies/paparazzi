@@ -10,15 +10,15 @@
     <configure name="XINCA_NUM_ACT" default="4"/>
 	
     <section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
-	  <define name="C_L_ALPHA" value="1.55" description="lift over angle of attack"/>
-	  <define name="C_X_TAIL_ROTOR" value="0.002" description="tail rotor effectiveness"/>
-	  <define name="C_Z_THRUST" value="0.0032" description="thrust effectiveness"/>
+	  <define name="C_L_ALPHA" value="1.55" description="lift over angle of attack coefficient"/>
+	  <define name="C_X_TAIL_ROTOR" value="2.0" description="tail rotor effectiveness (mm/s^2 per paparazzi unit)"/>
+	  <define name="C_Z_THRUST" value="3.2" description="thrust effectiveness (mm/s^2 per paparazzi unit)"/>
 	  <define name="MASS" value="3.0" description="airframe mass (kg)"/>
-	  <define name="WING_SURFACE" value="0.24" description="wing surface area in m^2"/>
-	  <define name="RHO" value="1.225" description="air density"/>
-	  <define name="GRAVITY" value="9.81" description="gravitational acceleration"/>
-	  <define name="ACT_X_TAU" value="60" description="ttime constant tau of first order actuator dynamics in x direction"/>
-	  <define name="ACT_Z_TAU" value="30" description="ttime constant tau of first order actuator dynamics in z direction"/>
+	  <define name="WING_SURFACE" value="0.24" description="wing surface area (m^2)"/>
+	  <define name="RHO" value="1.225" description="air density (kg/m^3)"/>
+	  <define name="GRAVITY" value="9.81" description="gravitational acceleration (m/s^2)"/>
+	  <define name="ACT_X_TAU" value="60" description="time constant tau of first order actuator dynamics in x direction (s)"/>
+	  <define name="ACT_Z_TAU" value="30" description="time constant tau of first order actuator dynamics in z direction (s)"/>
 	  <define name="U_PREF" value="{0, 0, 0, 0}" description="preferred pitch and roll angles and tail rotor and thrust inputs"/>
 	  <define name="U_PREF" value="{0, 0, 0, 0}" description="preferred pitch and roll angles and tail rotor and thrust inputs"/>
 	  <define name="W_ACC" value="{10, 10, 1}" description="weights to prioritise certain accelerations over others"/>
