@@ -445,6 +445,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   float v_thrust = 0.0;
   if (indi_thrust_increment_set && in_flight) {
     v_thrust = indi_thrust_increment;
+    printf("\nINCREMENT EXECUTED");
 
     //update thrust command such that the current is correctly estimated
     stabilization_cmd[COMMAND_THRUST] = 0;
@@ -454,6 +455,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     stabilization_cmd[COMMAND_THRUST] /= num_thrusters;
 
   } else {
+    printf("\nNON_INCREMENT EXECUTED");
     // incremental thrust
     for (i = 0; i < INDI_NUM_ACT; i++) {
       v_thrust +=
@@ -549,6 +551,12 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 void stabilization_indi_run(bool in_flight, bool rate_control)
 {
 
+  /* compute the INDI command once every run_nth_cycle cycles*/
+  if (num_cycle < run_nth_cycle) {
+    num_cycle++;
+    return;
+  }
+
   /* Propagate the filter on the gyroscopes */
   struct FloatRates *body_rates = stateGetBodyRates_f();
   float rate_vect[3] = {body_rates->p, body_rates->q, body_rates->r};
@@ -575,13 +583,8 @@ void stabilization_indi_run(bool in_flight, bool rate_control)
   int32_quat_wrap_shortest(&att_err);
   int32_quat_normalize(&att_err);
 
-  /* compute the INDI command once every run_nth_cycle cycles*/
-  if (num_cycle >= run_nth_cycle) {
-    num_cycle = 1;
-    stabilization_indi_calc_cmd(&att_err, rate_control, in_flight);
-  } else {
-    num_cycle += 1;
-  }
+  /* compute the INDI command */
+  stabilization_indi_calc_cmd(&att_err, rate_control, in_flight);
 
   // Set the stab_cmd to 42 to indicate that it is not used
   stabilization_cmd[COMMAND_ROLL] = 42;
@@ -591,6 +594,9 @@ void stabilization_indi_run(bool in_flight, bool rate_control)
   // Reset thrust increment boolean
   indi_thrust_increment_set = false;
   
+  // Reset cycle number
+  num_cycle = 1;
+
 }
 
 // This function reads rc commands
@@ -822,6 +828,7 @@ static void rpm_cb(uint8_t __attribute__((unused)) sender_id, uint16_t UNUSED *r
  */
 static void thrust_cb(uint8_t UNUSED sender_id, float thrust_increment)
 {
+  printf("\nINCREMENT RECEIVED");
   indi_thrust_increment = thrust_increment;
   indi_thrust_increment_set = true;
 }

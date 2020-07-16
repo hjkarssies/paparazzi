@@ -20,7 +20,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/** @file wls_alloc.c
+/** @file wls_alloc_guidance.c
  * @brief This is an active set algorithm for WLS control allocation
  *
  * This algorithm will find the optimal inputs to produce the least error wrt
@@ -49,7 +49,7 @@ void print_final_values_guidance(int n_u, int n_v, float* u, float** B, float* v
 void print_in_and_outputs_guidance(int n_c, int n_free, float** A_free_ptr, float* d, float* p_free);
 
 // provide loop feedback
-#define WLS_VERBOSE FALSE
+#define WLS_VERBOSE_GUIDANCE FALSE
 
 // Problem size needs to be predefined to avoid having to use VLAs
 #ifndef CA_N_V_GUIDANCE
@@ -212,7 +212,7 @@ int wls_alloc_guidance(float* u, float* v, float* umin, float* umax, float** B,
       qr_solve_wrapper_guidance(n_c, n_free, A_free_ptr, d, p_free);
 
       //print results current step
-#if WLS_VERBOSE
+#if WLS_VERBOSE_GUIDANCE
       print_in_and_outputs_guidance(n_c, n_free, A_free_ptr, d, p_free);
 #endif
 
@@ -264,7 +264,7 @@ int wls_alloc_guidance(float* u, float* v, float* umin, float* umax, float** B,
       }
       if (break_flag) {
 
-#if WLS_VERBOSE
+#if WLS_VERBOSE_GUIDANCE
         print_final_values_guidance(1, n_u, n_v, u, B, v, umin, umax);
 #endif
 
@@ -314,7 +314,7 @@ int wls_alloc_guidance(float* u, float* v, float* umin, float* umax, float** B,
   return -1;
 }
 
-#if WLS_VERBOSE
+#if WLS_VERBOSE_GUIDANCE
 void print_in_and_outputs_guidance(int n_c, int n_free, float** A_free_ptr, float* d, float* p_free) {
 
   printf("n_c = %d n_free = %d\n", n_c, n_free);

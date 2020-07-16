@@ -14,18 +14,19 @@
 
 		<target name="ap" board="lisa_mx_2.1">
 			<!-- MPU6000 is configured to output data at 2kHz, but polled at 512Hz PERIODIC_FREQUENCY -->
+			<module name="radio_control" type="spektrum">
+				<define name="RADIO_MODE"						value="RADIO_GEAR"/>
+				<define name="RADIO_FORWARD_THRUST"				value="RADIO_AUX2"/>
+				<define name="RADIO_KILL_SWITCH"				value="RADIO_AUX1"/>
+				<define name="USE_KILL_SWITCH_FOR_MOTOR_ARMING"	value="1" />
+			</module>
 		</target>
 
 		<target name="nps" board="pc">
 			<module name="fdm" type="jsbsim"/>
+			<module name="radio_control" type="datalink"/>
+			<define name="RADIO_FORWARD_THRUST"					value="6"/>
 		</target>
-
-		<module name="radio_control" type="spektrum">
-			<define name="RADIO_MODE"						value="RADIO_GEAR"/>
-			<define name="RADIO_FORWARD_THRUST"				value="RADIO_AUX2"/>
-			<define name="RADIO_KILL_SWITCH"				value="RADIO_AUX1"/>
-			<define name="USE_KILL_SWITCH_FOR_MOTOR_ARMING"	value="1" />
-		</module>
 
 		<module name="actuators" type="pwm">
 			<define name="SERVO_HZ" value="400"/>
@@ -40,7 +41,7 @@
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
-		<module name="guidance" type="xinca"/>
+		<module name="guidance" type="indi"/>
 
 		<module name="ahrs" type="int_cmpl_quat">
 			<configure	name="USE_MAGNETOMETER"					value="FALSE"/>
@@ -233,6 +234,8 @@
 	    
 		<define name="POS_GAIN"			value="1.0"/>
 		<define name="SPEED_GAIN"		value="3.0"/>
+		<define name="SPECIFIC_FORCE_GAIN" value="100"/>
+		<define name="THRUST_DYNAMICS"	value="0.05"/>
 		<define name="MAX_BANK"			value="20" unit="deg"/>
 	</section>
 
@@ -240,12 +243,13 @@
 
 	    <define name="OUTPUTS"			value="3"/>
 	    <define name="NUM_ACT"			value="4"/>
+	    <define name="NTH_CYCLE"		value="2"/>
 		
 		<define name="ACT_X_TAU"		value="60"/>
 		<define name="ACT_Z_TAU"		value="29"/>
 		<define name="U_PREF"			value="{0,  0,  0,  0}"/>
 		<define name="W_ACC"			value="{10, 10, 1}"/>
-		<define name="W_ACT"			value="{1,  1,  10, 10}"/>
+		<define name="W_ACT"			value="{1,  1,  1, 10}"/>
 		<define name="GAMMA"			value="10000"/>
 		
 		<define name="C_L_ALPHA"		value="1.55"/>
@@ -270,9 +274,10 @@
 
 	<section name="SIMULATOR" prefix="NPS_">
 
-		<define name="ACTUATOR_NAMES"	value="front_motor, right_motor, back_motor, left_motor"	type="string[]"/>
-		<define name="JSBSIM_MODEL"		value="simple_quad"											type="string"/>
+		<define name="ACTUATOR_NAMES"	value="front_motor, right_motor, back_motor, left_motor, ailerons, left_ruddervator, right_ruddervator, tail_rotor"	type="string[]"/>
+		<define name="JSBSIM_MODEL"		value="quadplane"											type="string"/>
 		<define name="SENSORS_PARAMS"	value="nps_sensors_params_default.h"						type="string"/>
+		<define name="NO_MOTOR_MIXING" 	value="TRUE"/>
 
 		<!-- Mode switch on joystick ch5 (numbering starts at zero) -->
 		<define name="JS_AXIS_MODE"		value="4"/>

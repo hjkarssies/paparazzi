@@ -22,9 +22,10 @@
 	  <define name="U_PREF" value="{0, 0, 0, 0}" description="preferred pitch and roll angles and tail rotor and thrust inputs"/>
 	  <define name="U_PREF" value="{0, 0, 0, 0}" description="preferred pitch and roll angles and tail rotor and thrust inputs"/>
 	  <define name="W_ACC" value="{10, 10, 1}" description="weights to prioritise certain accelerations over others"/>
-	  <define name="W_ACT" value="{1, 1, 10, 10}" description="weights to prioritise certain 'actuators' over other"/>
+	  <define name="W_ACT" value="{1, 1, 1, 10}" description="weights to prioritise certain 'actuators' over other"/>
 	  <define name="GAMMA" value="10000" description="factor to prioritise one subobjective over the other"/>
-	  <define name="H_THRES" value="30" description="minimum altitude for tail rotor use"/>
+	  <define name="H_THRES" value="0.3" description="minimum altitude for tail rotor use"/>
+	  <define name="XINCA_NTH_CYCLE" value="1" description="run every nth cycle"/>
     </section>
 	
   </doc>
@@ -50,8 +51,8 @@
     <define name="GUIDANCE_INDI" value="TRUE"/>
     <configure name="XINCA_OUTPUTS" default="3"/>
     <configure name="XINCA_NUM_ACT" default="4"/>
-    <define name="XINCA_OUTPUTS" value="$(INDI_OUTPUTS)"/>
-    <define name="XINCA_NUM_ACT" value="$(INDI_NUM_ACT)"/>
+    <define name="XINCA_OUTPUTS" value="$(XINCA_OUTPUTS)"/>
+    <define name="XINCA_NUM_ACT" value="$(XINCA_NUM_ACT)"/>
     <define name="CA_N_V_GUIDANCE" value="3"/>
     <define name="CA_N_U_GUIDANCE" value="4"/>
   </makefile>
