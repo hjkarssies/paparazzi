@@ -179,7 +179,7 @@
 		<define name="ACT_IS_SURFACE"			value="{     0,      0,      0,      0,      1,      1,      1  }"/>
 		<define name="ACT_RATE_LIMIT"			value="{  9600,   9600,   9600,   9600,   9600,   9600,   9600  }"/>
 		<define name="ACT_PREF"					value="{     0,      0,      0,      0,      0,      0,      0  }"/>
-		<define name="ACT_PRIORITIES"			value="{     1,      1,      1,      1,     10,     10,     10  }"/>
+		<define name="ACT_PRIORITIES"			value="{    10,     10,     10,     10,      1,      1,      1  }"/>
 		
 		<!-- Control effectiveness -->
 		<define name="G1_ROLL"					value="{  11.0,  -11.0,  -11.0,   11.0,    0.15,   0.0,    0.0  }"/>
@@ -237,7 +237,7 @@
 <!-- 		<define name="SPECIFIC_FORCE_GAIN" value="312.5"/> -->
 <!-- 		<define name="THRUST_DYNAMICS"	value="0.05"/> -->
 		<define name="MAX_BANK"			value="10" unit="deg"/>
-		<define name="RC_DEBUG"			value="TRUE"/>
+		<define name="RC_DEBUG"			value="FALSE"/>
 	</section>
 
 	<section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
@@ -250,7 +250,7 @@
 		<define name="ACT_Z_TAU"		value="29"/>
 		<define name="U_PREF"			value="{0,  0,  0,  0}"/>
 		<define name="W_ACC"			value="{10, 10, 1}"/>
-		<define name="W_ACT"			value="{1,  1,  1, 10}"/>
+		<define name="W_ACT"			value="{10,  10,  100, 1}"/>
 		<define name="GAMMA"			value="10000"/>
 		
 		<define name="C_L_ALPHA"		value="1.55"/>

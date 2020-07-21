@@ -449,9 +449,9 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     //update thrust command such that the current is correctly estimated
     stabilization_cmd[COMMAND_THRUST] = 0;
     for (i = 0; i < INDI_NUM_ACT; i++) {
-      stabilization_cmd[COMMAND_THRUST] += actuator_state[i] * (int32_t) act_is_thrust[i];
+      stabilization_cmd[COMMAND_THRUST] += actuator_state[i] * (float) act_is_thrust[i];
     }
-    stabilization_cmd[COMMAND_THRUST] /= num_thrusters;
+    stabilization_cmd[COMMAND_THRUST] /= (float) num_thrusters;
 
   } else {
     // incremental thrust

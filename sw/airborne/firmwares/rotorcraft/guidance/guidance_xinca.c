@@ -173,7 +173,7 @@ float W_acc[XINCA_OUTPUTS] = {10, 10, 1};
 #ifdef GUIDANCE_XINCA_W_ACT
 float W_act[XINCA_NUM_ACT] = GUIDANCE_XINCA_W_ACT;
 #else
-float W_act[XINCA_NUM_ACT] = {1, 1, 1, 1};
+float W_act[XINCA_NUM_ACT] = {10, 10, 100, 1};
 #endif
 
 #ifdef GUIDANCE_XINCA_GAMMA
@@ -364,8 +364,8 @@ void guidance_indi_run(float *heading_sp)
   }
 #endif
 
-//  //Overwrite the thrust command from guidance_v
-//  stabilization_cmd[COMMAND_THRUST] = act_z_in;
+  //Overwrite the thrust command from guidance_v
+  stabilization_cmd[COMMAND_THRUST] = act_z_in;
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
@@ -376,12 +376,12 @@ void guidance_indi_run(float *heading_sp)
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 
-//  //Commit tail rotor command
-//  if (stateGetPositionNed_i()->z > h_thres) {
-//    actuators_pprz[7] = act_x_in;
-//  } else {
-//    actuators_pprz[7] = -MAX_PPRZ;
-//  }
+  //Commit tail rotor command
+  if (-stateGetPositionNed_f()->z >= h_thres) {
+    actuators_pprz[7] = act_x_in;
+  } else {
+    actuators_pprz[7] = -MAX_PPRZ;
+  }
   
 }
 
@@ -425,6 +425,7 @@ void guidance_indi_propagate_filters(struct FloatEulers *eulers)
 void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
 {
 
+  // Get rotation matrix from NED to body coordinates
   struct FloatRMat *ned_to_body_rmat = stateGetNedToBodyRMat_f();
 
   // Get vertical body acceleration
@@ -458,16 +459,16 @@ void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
   G[1][2] = -sphi;
   G[2][2] = ctheta * cphi;
 
-//  // Only use tail rotor above threshold height
-//  if (stateGetPositionNed_i()->z > h_thres) {
-//    G[0][3] = ctheta;
-//    G[1][3] = 0;
-//    G[2][3] = stheta;
-//  } else {
+  // Only use tail rotor above threshold height
+  if (-stateGetPositionNed_f()->z >= h_thres) {
+    G[0][3] = ctheta;
+    G[1][3] = 0;
+    G[2][3] = -stheta;
+  } else {
     G[0][3] = 0;
     G[1][3] = 0;
     G[2][3] = 0;
-//  }
+  }
 
   for (int i = 0; i < XINCA_OUTPUTS; i++) {
     B[i] = G[i];
