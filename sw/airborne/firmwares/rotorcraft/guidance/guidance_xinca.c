@@ -223,7 +223,7 @@ void guidance_indi_enter(void)
   float_vect_zero(du_prev_xinca, XINCA_NUM_ACT);
 
   float tau = 1.0 / (2.0 * M_PI * filter_cutoff);
-  float sample_time = 1.0 / PERIODIC_FREQUENCY / run_nth_cycle_xinca;
+  float sample_time = 1.0 / (PERIODIC_FREQUENCY / run_nth_cycle_xinca);
   for (int8_t i = 0; i < 3; i++) {
     init_butterworth_2_low_pass(&filt_accel_ned[i], tau, sample_time, 0.0);
   }
@@ -317,14 +317,14 @@ void guidance_indi_run(float *heading_sp)
   // Minimum increment in pitch angle, roll angle, thrust and tail rotor input
   du_min_xinca[0] = -guidance_indi_max_bank - pitch_filt.o[0];
   du_min_xinca[1] = -guidance_indi_max_bank - roll_filt.o[0];
-  du_min_xinca[2] = -act_z_filt.o[0];
-  du_min_xinca[3] = -act_x_filt.o[0];
+  du_min_xinca[2] = (MAX_PPRZ - act_z_filt.o[0]) / c_z_thrust / XINCA_G_SCALING;
+  du_min_xinca[3] = -act_x_filt.o[0] / c_x_tail_rotor / XINCA_G_SCALING;
 
   // Maximum increment in pitch angle, roll angle, thrust and tail rotor input
   du_max_xinca[0] = guidance_indi_max_bank - pitch_filt.o[0];
   du_max_xinca[1] = guidance_indi_max_bank - roll_filt.o[0];
-  du_max_xinca[2] = MAX_PPRZ - act_z_filt.o[0];
-  du_max_xinca[3] = MAX_PPRZ - act_x_filt.o[0];
+  du_max_xinca[2] = -act_z_filt.o[0] / c_z_thrust / XINCA_G_SCALING;
+  du_max_xinca[3] = (MAX_PPRZ - act_x_filt.o[0]) / c_x_tail_rotor / XINCA_G_SCALING;
 
   // Preferred increment in pitch angle, roll angle, thrust and tail rotor input
   du_pref_xinca[0] = u_pref[0] - pitch_filt.o[0];
@@ -339,7 +339,7 @@ void guidance_indi_run(float *heading_sp)
 
   // WLS Control Allocator
   wls_alloc_guidance(du_xinca, v_xinca, du_min_xinca, du_max_xinca,
-      B, du_prev_xinca, 0, W_acc, W_act, du_pref_xinca, 10000, 100);
+      B, du_prev_xinca, 0, W_acc, W_act, du_pref_xinca, 10000, 10);
   float_vect_copy(du_prev_xinca, du_xinca, XINCA_NUM_ACT);
 
   AbiSendMsgTHRUST(THRUST_INCREMENT_ID, du_xinca[2]);
@@ -352,10 +352,10 @@ void guidance_indi_run(float *heading_sp)
   guidance_indi_filter_actuators();
 
   //Add increment in thrust and tail rotor input
-  act_z_in = act_z_filt.o[0] + du_xinca[2] * c_z_thrust / XINGA_G_SCALING;
+  act_z_in = act_z_filt.o[0] + du_xinca[2] * c_z_thrust * XINCA_G_SCALING;
   Bound(act_z_in, 0, 9600);
 
-  act_x_in = act_x_filt.o[0] + du_xinca[3] * c_z_tail_rotor / XINGA_G_SCALING;
+  act_x_in = act_x_filt.o[0] + du_xinca[3] * c_x_tail_rotor * XINCA_G_SCALING;
   Bound(act_x_in, 0, 9600);
 
 #if GUIDANCE_INDI_RC_DEBUG
@@ -364,8 +364,8 @@ void guidance_indi_run(float *heading_sp)
   }
 #endif
 
-  //Overwrite the thrust command from guidance_v
-  stabilization_cmd[COMMAND_THRUST] = act_z_in;
+//  //Overwrite the thrust command from guidance_v
+//  stabilization_cmd[COMMAND_THRUST] = act_z_in;
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
@@ -376,12 +376,12 @@ void guidance_indi_run(float *heading_sp)
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 
-  //Commit tail rotor command
-  if (stateGetPositionNed_i()->z > h_thres) {
-    actuators_pprz[7] = act_x_in;
-  } else {
-    actuators_pprz[7] = -MAX_PPRZ;
-  }
+//  //Commit tail rotor command
+//  if (stateGetPositionNed_i()->z > h_thres) {
+//    actuators_pprz[7] = act_x_in;
+//  } else {
+//    actuators_pprz[7] = -MAX_PPRZ;
+//  }
   
 }
 
@@ -450,27 +450,24 @@ void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
   // Calculate matrix components
   G[0][0] = ctheta * cphi * T;
   G[1][0] = 0;
-  G[2][0] = -stheta * cphi * T + c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface / mass;
+  G[2][0] = -stheta * cphi * T;// + c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface / mass;
   G[0][1] = -stheta * sphi * T;
   G[1][1] = -cphi * T;
   G[2][1] = -ctheta * sphi * T;
   G[0][2] = stheta * cphi;
-  G[1][2] = -sphi * c_z_thrust;
+  G[1][2] = -sphi;
   G[2][2] = ctheta * cphi;
 
 //  // Only use tail rotor above threshold height
 //  if (stateGetPositionNed_i()->z > h_thres) {
-//    printf("\nTail rotor:\ton");
-    G[0][3] = ctheta * c_x_tail_rotor;
-    G[1][3] = 0;
-    G[2][3] = stheta * c_x_tail_rotor;
-//  } else {
-//    printf("\nTail rotor:\toff");
-//    G[0][3] = 0;
+//    G[0][3] = ctheta;
 //    G[1][3] = 0;
-//    G[2][3] = 0;
+//    G[2][3] = stheta;
+//  } else {
+    G[0][3] = 0;
+    G[1][3] = 0;
+    G[2][3] = 0;
 //  }
-  printf("\nAltitude:\t%f4.3", stateGetPositionNed_i()->z);
 
   for (int i = 0; i < XINCA_OUTPUTS; i++) {
     B[i] = G[i];

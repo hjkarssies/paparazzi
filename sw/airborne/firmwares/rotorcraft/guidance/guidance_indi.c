@@ -225,12 +225,14 @@ void guidance_indi_run(float *heading_sp)
   //else ignore the vertical acceleration error
 #ifndef GUIDANCE_INDI_SPECIFIC_FORCE_GAIN
 #ifndef STABILIZATION_ATTITUDE_INDI_FULL
+  printf("\nA_fidd.z = 0");
   a_diff.z = 0.0;
 #endif
 #endif
 
   //Calculate roll,pitch and thrust command
   MAT33_VECT3_MUL(control_increment, Ga_inv, a_diff);
+  printf("\nComitting AbiSendMsgTHRUST(THRUST_INCREMENT_ID, control_increment.z)");
 
   AbiSendMsgTHRUST(THRUST_INCREMENT_ID, control_increment.z);
 
@@ -253,6 +255,7 @@ void guidance_indi_run(float *heading_sp)
 
   //Overwrite the thrust command from guidance_v
   stabilization_cmd[COMMAND_THRUST] = thrust_in;
+  printf("\nComitting stabilization_cmd[COMMAND_THRUST]");
 #endif
 
   //Bound euler angles to prevent flipping
@@ -374,4 +377,3 @@ static void accel_sp_cb(uint8_t sender_id __attribute__((unused)), uint8_t flag,
     time_of_accel_sp_3d = get_sys_time_float();
   }
 }
-

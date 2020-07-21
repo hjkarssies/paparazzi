@@ -445,7 +445,6 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   float v_thrust = 0.0;
   if (indi_thrust_increment_set && in_flight) {
     v_thrust = indi_thrust_increment;
-    printf("\nINCREMENT EXECUTED");
 
     //update thrust command such that the current is correctly estimated
     stabilization_cmd[COMMAND_THRUST] = 0;
@@ -455,7 +454,6 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
     stabilization_cmd[COMMAND_THRUST] /= num_thrusters;
 
   } else {
-    printf("\nNON_INCREMENT EXECUTED");
     // incremental thrust
     for (i = 0; i < INDI_NUM_ACT; i++) {
       v_thrust +=
@@ -828,7 +826,6 @@ static void rpm_cb(uint8_t __attribute__((unused)) sender_id, uint16_t UNUSED *r
  */
 static void thrust_cb(uint8_t UNUSED sender_id, float thrust_increment)
 {
-  printf("\nINCREMENT RECEIVED");
   indi_thrust_increment = thrust_increment;
   indi_thrust_increment_set = true;
 }

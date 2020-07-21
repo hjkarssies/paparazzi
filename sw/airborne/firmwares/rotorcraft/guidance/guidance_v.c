@@ -303,6 +303,7 @@ void guidance_v_run(bool in_flight)
   /* reset flag indicating if desired zd was updated */
   desired_zd_updated = false;
 
+#ifdef GUIDANCE_INDI
   switch (guidance_v_mode) {
 
     case GUIDANCE_V_MODE_RC_DIRECT:
@@ -353,6 +354,7 @@ void guidance_v_run(bool in_flight)
     default:
       break;
   }
+#endif
 }
 
 

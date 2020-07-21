@@ -41,7 +41,7 @@
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
-		<module name="guidance" type="indi"/>
+		<module name="guidance" type="xinca"/>
 
 		<module name="ahrs" type="int_cmpl_quat">
 			<configure	name="USE_MAGNETOMETER"					value="FALSE"/>
@@ -74,7 +74,7 @@
 		<servo name="FRONT_LEFT"		no="0" min="1000" neutral="1100" max="1900"/>
 		<servo name="FRONT_RIGHT"		no="1" min="1000" neutral="1100" max="1900"/>
 		<servo name="BACK_RIGHT"		no="2" min="1000" neutral="1100" max="1900"/>
-		<servo name="BACK_LEFT"			no="3" min="1000" neutral="1150" max="1900"/>
+		<servo name="BACK_LEFT"			no="3" min="1000" neutral="1100" max="1900"/>
 		<servo name="AILERONS"			no="4" min="1000" neutral="1470" max="1900"/>
 		<servo name="RUDDERVATOR_LEFT"	no="5" min="1000" neutral="1500" max="2000"/>
 		<servo name="RUDDERVATOR_RIGHT"	no="6" min="1000" neutral="1470" max="2000"/>
@@ -209,7 +209,7 @@
 		<define name="WLS_PRIORITIES"			value="{100, 100, 1, 1000}"/>
 		
 		<!--Run every nth cycle -->
-		<define name="NTH_CYCLE"				value="2"/>
+		<define name="NTH_CYCLE"				value="2.0"/>
 
 	</section>
 
@@ -222,7 +222,7 @@
 	</section>
 
 	<section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-		<define name="MAX_BANK"			value="20" unit="deg"/>
+		<define name="MAX_BANK"			value="10" unit="deg"/>
 		<define name="USE_SPEED_REF"	value="TRUE"/>
 		<define name="PGAIN"			value="50"/>
 		<define name="DGAIN"			value="100"/>
@@ -234,16 +234,17 @@
 	    
 		<define name="POS_GAIN"			value="1.0"/>
 		<define name="SPEED_GAIN"		value="3.0"/>
-		<define name="SPECIFIC_FORCE_GAIN" value="100"/>
-		<define name="THRUST_DYNAMICS"	value="0.05"/>
-		<define name="MAX_BANK"			value="20" unit="deg"/>
+<!-- 		<define name="SPECIFIC_FORCE_GAIN" value="312.5"/> -->
+<!-- 		<define name="THRUST_DYNAMICS"	value="0.05"/> -->
+		<define name="MAX_BANK"			value="10" unit="deg"/>
+		<define name="RC_DEBUG"			value="TRUE"/>
 	</section>
 
 	<section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
 
 	    <define name="OUTPUTS"			value="3"/>
 	    <define name="NUM_ACT"			value="4"/>
-	    <define name="NTH_CYCLE"		value="2"/>
+	    <define name="NTH_CYCLE"		value="2.0"/>
 		
 		<define name="ACT_X_TAU"		value="60"/>
 		<define name="ACT_Z_TAU"		value="29"/>
@@ -253,8 +254,8 @@
 		<define name="GAMMA"			value="10000"/>
 		
 		<define name="C_L_ALPHA"		value="1.55"/>
-		<define name="C_X_TAIL_ROTOR"	value="2.0"/>
-		<define name="C_Z_THRUST"		value="3.2"/>
+		<define name="C_X_TAIL_ROTOR"	value="2"/>
+		<define name="C_Z_THRUST"		value="-3.2"/>
 		<define name="MASS"				value="3.0"/>
 		<define name="WING_SURFACE"		value="0.24"/>
 		
