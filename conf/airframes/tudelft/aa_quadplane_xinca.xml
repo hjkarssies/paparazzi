@@ -209,7 +209,7 @@
 		<define name="WLS_PRIORITIES"			value="{100, 100, 1, 1000}"/>
 		
 		<!--Run every nth cycle -->
-		<define name="NTH_CYCLE"				value="2.0"/>
+		<define name="NTH_CYCLE"				value="2"/>
 
 	</section>
 
@@ -237,14 +237,14 @@
 <!-- 		<define name="SPECIFIC_FORCE_GAIN" value="312.5"/> -->
 <!-- 		<define name="THRUST_DYNAMICS"	value="0.05"/> -->
 		<define name="MAX_BANK"			value="10" unit="deg"/>
-		<define name="RC_DEBUG"			value="FALSE"/>
+		<define name="RC_DEBUG"			value="TRUE"/>
 	</section>
 
 	<section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
 
 	    <define name="OUTPUTS"			value="3"/>
 	    <define name="NUM_ACT"			value="4"/>
-	    <define name="NTH_CYCLE"		value="2.0"/>
+	    <define name="NTH_CYCLE"		value="2"/>
 		
 		<define name="ACT_X_TAU"		value="60"/>
 		<define name="ACT_Z_TAU"		value="29"/>

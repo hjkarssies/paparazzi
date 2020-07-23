@@ -191,7 +191,7 @@ float max_iter_xinca = 10;
 #ifdef GUIDANCE_XINCA_H_THRES
 float h_thres = GUIDANCE_XINCA_H_THRES;
 #else
-float h_thres = 0.3;
+float h_thres = 0.2;
 #endif
 
 static void guidance_indi_propagate_filters(struct FloatEulers *eulers);
@@ -253,10 +253,10 @@ void guidance_indi_run(float *heading_sp)
   struct FloatQuat * statequat = stateGetNedToBodyQuat_f();
   float_eulers_of_quat_yxz(&eulers_yxz, statequat);
 
-  //filter accel to get rid of noise and filter attitude to synchronize with accel
+  // Filter accel to get rid of noise and filter attitude to synchronize with accel
   guidance_indi_propagate_filters(&eulers_yxz);
 
-  //Linear controller to find the acceleration setpoint from position and velocity
+  // Linear controller to find the acceleration setpoint from position and velocity
   float pos_x_err = POS_FLOAT_OF_BFP(guidance_h.ref.pos.x) - stateGetPositionNed_f()->x;
   float pos_y_err = POS_FLOAT_OF_BFP(guidance_h.ref.pos.y) - stateGetPositionNed_f()->y;
   float pos_z_err = POS_FLOAT_OF_BFP(guidance_v_z_ref - stateGetPositionNed_i()->z);
@@ -304,15 +304,18 @@ void guidance_indi_run(float *heading_sp)
   sp_accel.z = -(radio_control.values[RADIO_THROTTLE] - 4500) * 8.0 / 9600.0;
 #endif
 
-  //Calculate matrix of partial derivatives
+  // Calculate matrix of partial derivatives
   guidance_xinca_calcG_yxz(&eulers_yxz);
 
   struct FloatVect3 a_diff = { sp_accel.x - filt_accel_ned[0].o[0],sp_accel.y - filt_accel_ned[1].o[0], sp_accel.z - filt_accel_ned[2].o[0]};
 
-  //Bound the acceleration error so that the linearization still holds
+  // Bound the acceleration error so that the linearization still holds
   Bound(a_diff.x, -6.0, 6.0);
   Bound(a_diff.y, -6.0, 6.0);
   Bound(a_diff.z, -9.0, 9.0);
+
+  // Filter actuator estimation
+  guidance_indi_filter_actuators();
 
   // Minimum increment in pitch angle, roll angle, thrust and tail rotor input
   du_min_xinca[0] = -guidance_indi_max_bank - pitch_filt.o[0];
@@ -348,8 +351,6 @@ void guidance_indi_run(float *heading_sp)
   guidance_euler_cmd.theta = pitch_filt.o[0] + du_xinca[0];
   guidance_euler_cmd.phi = roll_filt.o[0] + du_xinca[1];
   guidance_euler_cmd.psi = *heading_sp;
-
-  guidance_indi_filter_actuators();
 
   //Add increment in thrust and tail rotor input
   act_z_in = act_z_filt.o[0] + du_xinca[2] * c_z_thrust * XINCA_G_SCALING;
