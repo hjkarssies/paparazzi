@@ -35,8 +35,21 @@
       <message name="LOGGER_STATUS"            period="5.1"/>
       <message name="LIDAR"                    period="1.2"/>
       <message name="INS_EKF2"                 period=".25"/>
-      <message name="ACTUATORS"                period="0.05"/>
       <message name="SYS_MON"                  period="0.5"/>
+      <message name="ACTUATORS"                period="0.05"/>
+    </mode>
+
+    <mode name="xinca">
+      <message name="DL_VALUE"                 period="0.5"/>
+      <message name="ALIVE"                    period="2.1"/>
+      <message name="ROTORCRAFT_STATUS"        period="1"/>
+      <message name="XINCA"                    period="0.05"/>
+      <message name="INCA"                     period="0.05"/>
+      <message name="V_BODY"                   period="0.5"/>
+      <message name="ACTUATORS"                period="0.05"/>
+      <message name="INS"                      period="0.5"/>
+      <message name="SYS_MON"                  period="1.0"/>
+      <message name="ENERGY"                   period="2.5"/>
     </mode>
 
     <mode name="ppm">
@@ -109,8 +122,6 @@
       <message name="STAB_ATTITUDE_REF_FLOAT" period=".03"/>
       <message name="STAB_ATTITUDE_INDI"      period=".25"/>
       <message name="INDI_G"            period="0.2"/>
-      <message name="INDI_V"            period="0.2"/>
-      <message name="INDI_DU"			period="2.0"/>
       <message name="ACTUATORS"                period="0.05"/>
     </mode>
 

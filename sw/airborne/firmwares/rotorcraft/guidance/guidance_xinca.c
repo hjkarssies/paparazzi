@@ -120,6 +120,7 @@ int run_nth_cycle_xinca = 1; // Run every nth cycle
 float G[XINCA_OUTPUTS][XINCA_NUM_ACT];
 float *B[XINCA_OUTPUTS];
 float v_xinca[XINCA_OUTPUTS];
+float u_xinca[XINCA_NUM_ACT];
 float du_xinca[XINCA_NUM_ACT];
 float du_min_xinca[XINCA_NUM_ACT];
 float du_max_xinca[XINCA_NUM_ACT];
@@ -182,20 +183,28 @@ float gamma_sq = GUIDANCE_XINCA_GAMMA;
 float gamma_sq = 10000;
 #endif
 
-#ifdef GUIDANCE_XINCA_MAX_ITER
-float max_iter_xinca = GUIDANCE_XINCA_MAX_ITER;
-#else
-float max_iter_xinca = 10;
-#endif
-
 #ifdef GUIDANCE_XINCA_H_THRES
 float h_thres = GUIDANCE_XINCA_H_THRES;
 #else
-float h_thres = 0.3;
+float h_thres = 0.5;
 #endif
+
+uint8_t max_iter_xinca = 0;
 
 static void guidance_indi_propagate_filters(struct FloatEulers *eulers);
 static void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz);
+
+#if PERIODIC_TELEMETRY
+#include "subsystems/datalink/telemetry.h"
+static void send_xinca(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_XINCA(trans, dev, AC_ID, XINCA_OUTPUTS, v_xinca,
+                       XINCA_NUM_ACT, du_xinca,
+                       XINCA_NUM_ACT, u_xinca,
+                       &max_iter_xinca);
+  max_iter_xinca = 0;
+}
+#endif
 
 /**
  * @brief Init function
@@ -203,6 +212,10 @@ static void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz);
 void guidance_indi_init(void)
 {
   AbiBindMsgACCEL_SP(GUIDANCE_INDI_ACCEL_SP_ID, &accel_sp_ev, accel_sp_cb);
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_XINCA, send_xinca);
+#endif
 }
 
 /**
@@ -212,25 +225,27 @@ void guidance_indi_init(void)
 void guidance_indi_enter(void)
 {
 
-  act_z_dyn = 1 - exp(-act_z_tau / (PERIODIC_FREQUENCY / run_nth_cycle_xinca));
-  act_z_in = stabilization_cmd[COMMAND_THRUST];
+  act_z_dyn = 1 - exp(-act_z_tau / (PERIODIC_FREQUENCY / (float) run_nth_cycle_xinca));
+  act_z_in = 0;
   act_z = act_z_in;
   
-  act_x_dyn = 1 - exp(-act_x_tau / (PERIODIC_FREQUENCY / run_nth_cycle_xinca));
-  act_x_in = stabilization_cmd[COMMAND_PITCH];
+  act_x_dyn = 1 - exp(-act_x_tau / (PERIODIC_FREQUENCY / (float) run_nth_cycle_xinca));
+  act_x_in = 0;
   act_x = act_x_in;
 
   float_vect_zero(du_prev_xinca, XINCA_NUM_ACT);
 
   float tau = 1.0 / (2.0 * M_PI * filter_cutoff);
-  float sample_time = 1.0 / (PERIODIC_FREQUENCY / run_nth_cycle_xinca);
+  float sample_time = 1.0 / (PERIODIC_FREQUENCY / (float) run_nth_cycle_xinca);
   for (int8_t i = 0; i < 3; i++) {
     init_butterworth_2_low_pass(&filt_accel_ned[i], tau, sample_time, 0.0);
   }
+
   init_butterworth_2_low_pass(&roll_filt, tau, sample_time, stateGetNedToBodyEulers_f()->phi);
   init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, stateGetNedToBodyEulers_f()->theta);
-  init_butterworth_2_low_pass(&act_z_filt, tau, sample_time, act_z_in);
-  init_butterworth_2_low_pass(&act_x_filt, tau, sample_time, act_x_in);
+  init_butterworth_2_low_pass(&act_z_filt, act_z_tau, sample_time, act_z_in);
+  init_butterworth_2_low_pass(&act_x_filt, act_x_tau, sample_time, act_x_in);
+
 }
 
 /**
@@ -242,7 +257,7 @@ void guidance_indi_run(float *heading_sp)
 {
 
   // Only compute the XINCA command once every run_nth_cycle cycles
-  if (num_cycle_xinca >= run_nth_cycle_xinca) {
+  if (num_cycle_xinca >= (float) run_nth_cycle_xinca) {
     num_cycle_xinca = 1;
   } else {
     num_cycle_xinca += 1;
@@ -319,18 +334,20 @@ void guidance_indi_run(float *heading_sp)
   du_min_xinca[1] = -guidance_indi_max_bank - roll_filt.o[0];
   du_min_xinca[2] = (MAX_PPRZ - act_z_filt.o[0]) / c_z_thrust / XINCA_G_SCALING;
   du_min_xinca[3] = -act_x_filt.o[0] / c_x_tail_rotor / XINCA_G_SCALING;
+  du_min_xinca[3] = -10000;
 
   // Maximum increment in pitch angle, roll angle, thrust and tail rotor input
   du_max_xinca[0] = guidance_indi_max_bank - pitch_filt.o[0];
   du_max_xinca[1] = guidance_indi_max_bank - roll_filt.o[0];
-  du_max_xinca[2] = -act_z_filt.o[0] / c_z_thrust / XINCA_G_SCALING;
+  du_max_xinca[2] = - act_z_filt.o[0] / c_z_thrust / XINCA_G_SCALING;
   du_max_xinca[3] = (MAX_PPRZ - act_x_filt.o[0]) / c_x_tail_rotor / XINCA_G_SCALING;
+  du_max_xinca[3] = 10000;
 
   // Preferred increment in pitch angle, roll angle, thrust and tail rotor input
   du_pref_xinca[0] = u_pref[0] - pitch_filt.o[0];
   du_pref_xinca[1] = u_pref[1] - roll_filt.o[0];
-  du_pref_xinca[2] = u_pref[2] - act_z_filt.o[0];
-  du_pref_xinca[3] = u_pref[3] - act_x_filt.o[0];
+  du_pref_xinca[2] = u_pref[2] - act_z_filt.o[0] / c_z_thrust / XINCA_G_SCALING;
+  du_pref_xinca[3] = u_pref[3] - act_x_filt.o[0] / c_x_tail_rotor / XINCA_G_SCALING;
 
   // Calculate virtual input
   v_xinca[0] = a_diff.x;
@@ -338,9 +355,13 @@ void guidance_indi_run(float *heading_sp)
   v_xinca[2] = a_diff.z;
 
   // WLS Control Allocator
-  wls_alloc_guidance(du_xinca, v_xinca, du_min_xinca, du_max_xinca,
+  uint8_t iter = wls_alloc_guidance(du_xinca, v_xinca, du_min_xinca, du_max_xinca,
       B, du_prev_xinca, 0, W_acc, W_act, du_pref_xinca, 10000, 10);
   float_vect_copy(du_prev_xinca, du_xinca, XINCA_NUM_ACT);
+
+  if (iter > max_iter_xinca) {
+    max_iter_xinca = iter;
+  }
 
   AbiSendMsgTHRUST(THRUST_INCREMENT_ID, du_xinca[2]);
 
@@ -358,14 +379,15 @@ void guidance_indi_run(float *heading_sp)
   act_x_in = act_x_filt.o[0] + du_xinca[3] * c_x_tail_rotor * XINCA_G_SCALING;
   Bound(act_x_in, 0, 9600);
 
+
 #if GUIDANCE_INDI_RC_DEBUG
   if (radio_control.values[RADIO_THROTTLE] < 300) {
     act_z_in = 0;
   }
 #endif
 
-//  //Overwrite the thrust command from guidance_v
-//  stabilization_cmd[COMMAND_THRUST] = act_z_in;
+  //Overwrite the thrust command from guidance_v
+  stabilization_cmd[COMMAND_THRUST] = act_z_in;
 
   //Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
@@ -376,12 +398,17 @@ void guidance_indi_run(float *heading_sp)
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 
-//  //Commit tail rotor command
-//  if (stateGetPositionNed_i()->z > h_thres) {
-//    actuators_pprz[7] = act_x_in;
-//  } else {
-//    actuators_pprz[7] = -MAX_PPRZ;
-//  }
+  u_xinca[0] = roll_filt.o[0];
+  u_xinca[1] = pitch_filt.o[0];
+  u_xinca[2] = act_z_filt.o[0];
+  u_xinca[3] = act_x_filt.o[0];
+
+  //Commit tail rotor command
+  if (-stateGetPositionNed_f()->z >= h_thres) {
+    actuators_pprz[4] = act_x_in;
+  } else {
+    actuators_pprz[4] = 0;
+  }
   
 }
 
@@ -432,7 +459,7 @@ void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
   struct FloatVect3 a_body;
   float_rmat_vmult(&a_body, ned_to_body_rmat, &a_ned);
 
-  // Get body velocity velocity (ideally airspeed velocity)
+  // Get forward body velocity velocity (ideally airspeed velocity)
   struct NedCoor_f *ned_speed_f = stateGetSpeedNed_f();
   struct FloatVect3 speed_ned = {ned_speed_f->x, ned_speed_f->y, ned_speed_f->z};
   struct FloatVect3 speed_body;
@@ -450,7 +477,7 @@ void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
   // Calculate matrix components
   G[0][0] = ctheta * cphi * T;
   G[1][0] = 0;
-  G[2][0] = -stheta * cphi * T;// + c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface / mass;
+  G[2][0] = -stheta * cphi * T + c_l_alpha * 0.5 * rho * speed_body.x * speed_body.x * wing_surface / mass;
   G[0][1] = -stheta * sphi * T;
   G[1][1] = -cphi * T;
   G[2][1] = -ctheta * sphi * T;
@@ -458,16 +485,16 @@ void guidance_xinca_calcG_yxz(struct FloatEulers *euler_yxz)
   G[1][2] = -sphi;
   G[2][2] = ctheta * cphi;
 
-//  // Only use tail rotor above threshold height
-//  if (stateGetPositionNed_i()->z > h_thres) {
-//    G[0][3] = ctheta;
-//    G[1][3] = 0;
-//    G[2][3] = stheta;
-//  } else {
+  // Only use tail rotor above threshold height
+  if (-stateGetPositionNed_f()->z >= h_thres) {
+    G[0][3] = ctheta;
+    G[1][3] = 0;
+    G[2][3] = -stheta;
+  } else {
     G[0][3] = 0;
     G[1][3] = 0;
     G[2][3] = 0;
-//  }
+  }
 
   for (int i = 0; i < XINCA_OUTPUTS; i++) {
     B[i] = G[i];

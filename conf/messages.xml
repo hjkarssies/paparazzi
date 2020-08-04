@@ -1571,19 +1571,25 @@
       <field name="tv_nsec"  type="uint32"/>
       <field name="delay_ns" type="uint32"/>
     </message>
-
-    <message name="INDI_V" id="181">
-      <field name="v" type="float[]" unit="none"/>
-      <field name="v_abs" type="float[]" unit="none"/>
-      <field name="radio" type="int16[]" unit="none"/>
+    
+    <message name="XINCA" id="181">
+      <field name="XINCA_V" type="float[]" unit="none"/>
+      <field name="XINCA_DU" type="float[]" unit="none"/>
+      <field name="XINCA_U" type="float[]" unit="none"/>
+      <field name="MAX_ITER" type="uint8"/>
+    </message>
+    
+    <message name="INCA" id="182">
+      <field name="INCA_V" type="float[]" unit="none"/>
+      <field name="INCA_DU" type="float[]" unit="none"/>
+      <field name="INCA_U" type="float[]" unit="none"/>
+      <field name="MAX_ITER" type="uint8"/>
+    </message>
+    
+    <message name="V_BODY" id="183">
+      <field name="V_BODY" type="float[]" unit="none"/>
     </message>
 
-    <message name="INDI_DU" id="182">
-      <field name="du_min" type="float[]" unit="none"/>
-      <field name="du_max" type="float[]" unit="none"/>
-      <field name="du_pref" type="float[]" unit="none"/>
-    </message>
-	
     <!-- 183 is free -->
     <!-- 184 is free -->
     <!-- 185 is free -->
@@ -2071,11 +2077,10 @@
 
     <message name="INDI_G" id="250">
       <field name="G1_roll" type="float[]" unit="none"/>
-      <!-- <field name="G1_pitch" type="float[]" unit="none"/> -->
-      <!-- <field name="G1_yaw" type="float[]" unit="none"/> -->
-      <!-- <field name="G1_thrust" type="float[]" unit="none"/> -->
-      <!-- <field name="G2" type="float[]" unit="none"/> -->
-      <field name="u_body" type="float[]" unit="none"/>
+      <field name="G1_pitch" type="float[]" unit="none"/>
+      <field name="G1_yaw" type="float[]" unit="none"/>
+      <field name="G1_thrust" type="float[]" unit="none"/>
+      <field name="G2" type="float[]" unit="none"/>
     </message>
 
     <message name="GPS_RTK" id="251">

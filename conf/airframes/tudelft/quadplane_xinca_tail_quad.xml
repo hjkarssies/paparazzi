@@ -1,11 +1,13 @@
 <!DOCTYPE airframe SYSTEM "../airframe.dtd">
 
-<airframe name="Quadplane LisaM_2.0 pwm">
+<airframe name="Quadplane lisa_mx_2.1 pwm with XINCA and INDI on actuators excluding control surfaces">
 
 	<description>
 		Quadplane:
 		- modified mini-talon with cobra 2814/16 Kv1050 running a 10x8 prop
 		- quad with KISS esc + cobra 2207/2450kv running 6x3 props
+		- This quadplane runs XINCA on its outer loop and INDI in its inner loop without using
+		  its control surface in order to minimise computational effort
 	</description>
 
 	<!-- FIRMWARE -->
@@ -14,18 +16,17 @@
 
 		<target name="ap" board="lisa_mx_2.1">
 			<!-- MPU6000 is configured to output data at 2kHz, but polled at 512Hz PERIODIC_FREQUENCY -->
+			<module name="radio_control" type="spektrum">
+				<define name="RADIO_MODE"						value="RADIO_GEAR"/>
+				<define name="RADIO_KILL_SWITCH"				value="RADIO_AUX1"/>
+				<define name="USE_KILL_SWITCH_FOR_MOTOR_ARMING"	value="1" />
+			</module>
 		</target>
 
 		<target name="nps" board="pc">
 			<module name="fdm" type="jsbsim"/>
+			<module name="radio_control" type="datalink"/>
 		</target>
-
-		<module name="radio_control" type="spektrum">
-			<define name="RADIO_MODE"						value="RADIO_GEAR"/>
-			<define name="RADIO_FORWARD_THRUST"				value="RADIO_AUX2"/>
-			<define name="RADIO_KILL_SWITCH"				value="RADIO_AUX1"/>
-			<define name="USE_KILL_SWITCH_FOR_MOTOR_ARMING"	value="1" />
-		</module>
 
 		<module name="actuators" type="pwm">
 			<define name="SERVO_HZ" value="400"/>
@@ -39,6 +40,8 @@
 		<module name="stabilization" type="inca">
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
+
+		<module name="guidance" type="indi"/>
 
 		<module name="ahrs" type="int_cmpl_quat">
 			<configure	name="USE_MAGNETOMETER"					value="FALSE"/>
@@ -58,12 +61,7 @@
 		<axis name="PITCH"			failsafe_value="0"/>
 		<axis name="YAW"			failsafe_value="0"/>
 		<axis name="THRUST"			failsafe_value="0"/>
-		<axis name="FORWARD_THRUST"	failsafe_value="0"/>
 	</commands>
-
-	<rc_commands>
-		<set command="FORWARD_THRUST" value="@FORWARD_THRUST"/>
-	</rc_commands>
 
 	<!-- SERVOS -->
 
@@ -71,10 +69,7 @@
 		<servo name="FRONT_LEFT"		no="0" min="1000" neutral="1100" max="1900"/>
 		<servo name="FRONT_RIGHT"		no="1" min="1000" neutral="1100" max="1900"/>
 		<servo name="BACK_RIGHT"		no="2" min="1000" neutral="1100" max="1900"/>
-		<servo name="BACK_LEFT"			no="3" min="1000" neutral="1150" max="1900"/>
-		<servo name="AILERONS"			no="4" min="1000" neutral="1470" max="1900"/>
-		<servo name="RUDDERVATOR_LEFT"	no="5" min="1000" neutral="1500" max="2000"/>
-		<servo name="RUDDERVATOR_RIGHT"	no="6" min="1000" neutral="1470" max="2000"/>
+		<servo name="BACK_LEFT"			no="3" min="1000" neutral="1100" max="1900"/>
 		<servo name="FLYMOTOR"			no="7" min="1000" neutral="1100" max="1900"/>
 	</servos>
 
@@ -87,14 +82,9 @@
 		<set servo="FRONT_RIGHT"		value="autopilot_get_motors_on() ? actuators_pprz[1] : -MAX_PPRZ"/>
 		<set servo="BACK_RIGHT"			value="autopilot_get_motors_on() ? actuators_pprz[2] : -MAX_PPRZ"/>
 		<set servo="BACK_LEFT"			value="autopilot_get_motors_on() ? actuators_pprz[3] : -MAX_PPRZ"/>
-
-		<!-- Fixed wing actuator set -->
-		<set servo="AILERONS"			value="autopilot_get_motors_on() ? actuators_pprz[4] : 0"/>
-		<set servo="RUDDERVATOR_LEFT"	value="autopilot_get_motors_on() ? actuators_pprz[5] : 0"/>
-		<set servo="RUDDERVATOR_RIGHT"	value="autopilot_get_motors_on() ? actuators_pprz[6] : 0"/>
 		
 		<!-- Tail rotor -->
-		<set servo="FLYMOTOR"			value="autopilot_get_motors_on() ? @FORWARD_THRUST : -MAX_PPRZ"/>		
+		<set servo="FLYMOTOR"			value="(autopilot_get_motors_on() && -stateGetPositionNed_f()->z >= GUIDANCE_XINCA_H_THRES) ? actuators_pprz[4] : -MAX_PPRZ"/>
 
 	</command_laws>
 
@@ -167,33 +157,33 @@
 		
 		<!-- Virtual input and actuator vector dimensions -->
 		<define name="INDI_OUTPUTS"				value="4"/>
-		<define name="INDI_NUM_ACT"				value="7"/>
+		<define name="INDI_NUM_ACT"				value="4"/>
 		
 		<!-- Actuator properties -->
-		<define name="ACT_DYN"					value="{  29.0,   29.0,   29.0,   29.0,  100.0,  100.0,  100.0  }"/>
-		<define name="ACT_IS_SERVO"				value="{     0,      0,      0,      0,      1,      1,      1  }"/>
-		<define name="ACT_IS_THRUST"			value="{     1,      1,      1,      1,      0,      0,      0  }"/>
-		<define name="ACT_IS_SURFACE"			value="{     0,      0,      0,      0,      1,      1,      1  }"/>
-		<define name="ACT_RATE_LIMIT"			value="{  9600,   9600,   9600,   9600,   9600,   9600,   9600  }"/>
-		<define name="ACT_PREF"					value="{     0,      0,      0,      0,      0,      0,      0  }"/>
-		<define name="ACT_PRIORITIES"			value="{     1,      1,      1,      1,     10,     10,     10  }"/>
+		<define name="ACT_DYN_TAU"				value="{  29.0,   29.0,   29.0,   29.0  }"/>
+		<define name="ACT_IS_SERVO"				value="{     0,      0,      0,      0  }"/>
+		<define name="ACT_IS_THRUST"			value="{     1,      1,      1,      1  }"/>
+		<define name="ACT_IS_SURFACE"			value="{     0,      0,      0,      0  }"/>
+		<define name="ACT_RATE_LIMIT"			value="{  9600,   9600,   9600,   9600  }"/>
+		<define name="ACT_PREF"					value="{     0,      0,      0,      0  }"/>
+		<define name="ACT_PRIORITIES"			value="{    10,     10,     10,     10  }"/>
 		
 		<!-- Control effectiveness -->
-		<define name="G1_ROLL"					value="{  11.0,  -11.0,  -11.0,   11.0,    0.15,   0.0,    0.0  }"/>
-		<define name="G1_PITCH"					value="{   9.0,    9.0,   -9.0,   -9.0,    0.0,    0.11,  -0.11 }"/>
-		<define name="G1_YAW"					value="{  -0.60,   0.60,  -0.60,   0.60,   0.0,   -0.03,  -0.03 }"/>
-		<define name="G1_THRUST"				value="{  -0.80,  -0.80,  -0.80,  -0.80,   0.0,    0.0,    0.0  }"/>
+		<define name="G1_ROLL"					value="{  11.0,  -11.0,  -11.0,   11.0  }"/>
+		<define name="G1_PITCH"					value="{   9.0,    9.0,   -9.0,   -9.0  }"/>
+		<define name="G1_YAW"					value="{  -0.60,   0.60,  -0.60,   0.60 }"/>
+		<define name="G1_THRUST"				value="{  -0.80,  -0.80,  -0.80,  -0.80	}"/>
 
 		<!-- Counter torque effect of spinning up a rotor -->
-		<define name="G2"						value="{ -55.0,   55.0,  -55.0,   55.0,    0.0,    0.0,    0.0  }"/>
+		<define name="G2"						value="{ -55.0,   55.0,  -55.0,   55.0  }"/>
 
 		<!-- Reference acceleration for attitude control -->
 		<define name="REF_ERR_P"				value="200.0"/>
 		<define name="REF_ERR_Q"				value="200.0"/>
-		<define name="REF_ERR_R"				value="150.0"/>
+		<define name="REF_ERR_R"				value="200.0"/>
 		<define name="REF_RATE_P"				value="28.0"/>
 		<define name="REF_RATE_Q"				value="28.0"/>
-		<define name="REF_RATE_R"				value="28.0"/>
+		<define name="REF_RATE_R"				value="50.0"/>
 
 		<define name="ESTIMATION_FILT_CUTOFF"	value="4.0"/>
 		<define name="FILT_CUTOFF"				value="5.0"/>
@@ -203,7 +193,10 @@
 		<define name="ADAPTIVE_MU"				value="0.00001"/>
 
 		<!--Priority for each axis (roll, pitch, yaw and thrust)-->
-		<define name="WLS_PRIORITIES"			value="{100, 100, 1, 1000}"/>
+		<define name="WLS_PRIORITIES"			value="{100, 100, 10, 1000}"/>
+		
+		<!--Run every nth cycle -->
+		<define name="NTH_CYCLE"				value="1"/>
 
 	</section>
 
@@ -224,6 +217,30 @@
 		<define name="IGAIN"			value="20"/>
 	</section>
 
+	<section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
+
+	    <define name="OUTPUTS"			value="3"/>
+	    <define name="NUM_ACT"			value="4"/>
+		
+		<define name="ACT_X_TAU"		value="60"/>
+		<define name="ACT_Z_TAU"		value="29"/>
+		<define name="U_PREF"			value="{0,  0,  0,  0}"/>
+		<define name="W_ACC"			value="{1, 1, 1}"/>
+		<define name="W_ACT"			value="{10, 10, 10,  1}"/>
+		<define name="GAMMA"			value="10000"/>
+		<define name="H_THRES"			value="0.3"/>
+		
+		<define name="C_L_ALPHA"		value="1.55"/>
+		<define name="C_X_TAIL_ROTOR"	value="2"/>
+		<define name="C_Z_THRUST"		value="-3.2"/>
+		<define name="MASS"				value="3.0"/>
+		<define name="WING_SURFACE"		value="0.24"/>
+		
+		<!--Run every nth cycle -->
+	    <define name="NTH_CYCLE"		value="1"/>
+		
+	</section>
+
 	<section name="NAV">
 		<define name="ARRIVED_AT_WAYPOINT" value="0.2" unit="m"/>
 	</section>
@@ -238,9 +255,10 @@
 
 	<section name="SIMULATOR" prefix="NPS_">
 
-		<define name="ACTUATOR_NAMES"	value="front_motor, right_motor, back_motor, left_motor"	type="string[]"/>
-		<define name="JSBSIM_MODEL"		value="simple_quad"											type="string"/>
+		<define name="ACTUATOR_NAMES"	value="nw_motor, ne_motor, se_motor, sw_motor, tail_motor"	type="string[]"/>
+		<define name="JSBSIM_MODEL"		value="tail_quad"											type="string"/>
 		<define name="SENSORS_PARAMS"	value="nps_sensors_params_default.h"						type="string"/>
+		<define name="NO_MOTOR_MIXING" 	value="TRUE"/>
 
 		<!-- Mode switch on joystick ch5 (numbering starts at zero) -->
 		<define name="JS_AXIS_MODE"		value="4"/>
@@ -251,7 +269,7 @@
 		<define name="MODE_MANUAL"			value="AP_MODE_RC_DIRECT"/>
 		<define name="MODE_AUTO1"			value="AP_MODE_ATTITUDE_DIRECT"/>
 		<define name="MODE_AUTO2"			value="AP_MODE_NAV"/>
-		<define name="NO_RC_THRUST_LIMIT"	value="FALSE"/>
+		<define name="NO_RC_THRUST_LIMIT"	value="TRUE"/>
 	</section>
 
 </airframe>

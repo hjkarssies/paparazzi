@@ -201,6 +201,7 @@ Butterworth2LowPass estimation_output_lowpass_filters[3];
 Butterworth2LowPass acceleration_lowpass_filter;
 
 struct FloatVect3 body_accel_f;
+uint8_t max_iter_inca = 0;
 
 void init_filters(void);
 
@@ -208,29 +209,26 @@ void init_filters(void);
 #include "subsystems/datalink/telemetry.h"
 static void send_indi_g(struct transport_tx *trans, struct link_device *dev)
 {
-  pprz_msg_send_INDI_G(trans, dev, AC_ID,
-                       INDI_NUM_ACT, g1[0],
-                       // INDI_NUM_ACT, g1[1],
-                       // INDI_NUM_ACT, g1[2],
-                       // INDI_NUM_ACT, g1[3],
-                       // INDI_NUM_ACT, g2,
-                       1, &speed_body.x);
+  pprz_msg_send_INDI_G(trans, dev, AC_ID, INDI_NUM_ACT, g1_est[0],
+                       INDI_NUM_ACT, g1_est[1],
+                       INDI_NUM_ACT, g1_est[2],
+                       INDI_NUM_ACT, g1_est[3],
+                       INDI_NUM_ACT, g2_est);
 }
 
-static void send_indi_v(struct transport_tx *trans, struct link_device *dev)
+static void send_inca(struct transport_tx *trans, struct link_device *dev)
 {
-  pprz_msg_send_INDI_V(trans, dev, AC_ID,
-                       INDI_NUM_ACT, indi_v,
-                       INDI_OUTPUTS, indi_v_abs,
-                       INDI_OUTPUTS, radio_control.values);
+  pprz_msg_send_INCA(trans, dev, AC_ID, INDI_OUTPUTS, indi_v,
+                       INDI_NUM_ACT, indi_du,
+                       INDI_NUM_ACT, indi_u,
+                       &max_iter_inca);
+  max_iter_inca = 0;
 }
 
-static void send_indi_du(struct transport_tx *trans, struct link_device *dev)
+static void send_v_body(struct transport_tx *trans, struct link_device *dev)
 {
-  pprz_msg_send_INDI_DU(trans, dev, AC_ID,
-                       INDI_NUM_ACT, du_min,
-                       INDI_NUM_ACT, du_max,
-                       INDI_NUM_ACT, du_pref);
+  float v_body[3] = {speed_body.x, speed_body.y, speed_body.z};
+  pprz_msg_send_V_BODY(trans, dev, AC_ID, 3, v_body);
 }
 
 static void send_ahrs_ref_quat(struct transport_tx *trans, struct link_device *dev)
@@ -264,7 +262,7 @@ void stabilization_indi_init(void)
   float_vect_zero(estimation_rate_d, INDI_NUM_ACT);
   float_vect_zero(estimation_rate_dd, INDI_NUM_ACT);
   float_vect_zero(actuator_state_filt_vect, INDI_NUM_ACT);
-  float_vect_zero(indi_du_prev, INDI_NUM_ACT);  
+  float_vect_zero(indi_du_prev, INDI_NUM_ACT);
 
   //Calculate G1G2_PSEUDO_INVERSE
   calc_g1g2_pseudo_inv();
@@ -300,9 +298,10 @@ void stabilization_indi_init(void)
   }
 
 #if PERIODIC_TELEMETRY
+//  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_G, send_indi_g);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INCA, send_inca);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_V_BODY, send_v_body);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_G, send_indi_g);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_V, send_indi_v);
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_INDI_DU, send_indi_du);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AHRS_REF_QUAT, send_ahrs_ref_quat);
 #endif
 }
@@ -484,15 +483,22 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 #else
   // Calculate the min and max increments
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    du_min[i] = -MAX_PPRZ * act_is_servo[i] - actuator_state_filt_vect[i];
+    du_min[i] = MAX_PPRZ * act_is_servo[i] - actuator_state_filt_vect[i];
     du_max[i] = MAX_PPRZ - actuator_state_filt_vect[i];
     du_pref[i] = act_pref[i] - actuator_state_filt_vect[i];
   }
 
+  // Scale control surfaces with forward velocity
+  scale_surface_effectiveness();
+
   // WLS Control Allocator
-  wls_alloc(indi_du, indi_v, du_min, du_max, Bwls, indi_du_prev, 0, Wv, Wu, du_pref, 10000, 10);
+  uint8_t iter = wls_alloc(indi_du, indi_v, du_min, du_max, Bwls, indi_du_prev, 0, Wv, Wu, du_pref, 10000, 10);
   float_vect_copy(indi_du_prev, indi_du, INDI_NUM_ACT);
 #endif
+
+  if (iter > max_iter_inca) {
+    max_iter_inca = iter;
+  }
 
   // Add the increments to the actuators
   float_vect_sum(indi_u, actuator_state_filt_vect, indi_du, INDI_NUM_ACT);
@@ -529,9 +535,6 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
   if (in_flight && indi_use_adaptive) {
     lms_estimation();
   }
-  
-  // Scale control surfaces with forward velocity
-  scale_surface_effectiveness();
 
   /*Commit the actuator command*/
   for (i = 0; i < INDI_NUM_ACT; i++) {
@@ -886,6 +889,11 @@ void scale_surface_effectiveness(void)
   struct FloatVect3 speed_ned = {ned_speed_f->x, ned_speed_f->y, ned_speed_f->z};
   float_rmat_vmult(&speed_body, ned_to_body_rmat, &speed_ned);
   
+  // Bound measured forward speed for only large enough positive values
+  if (speed_body.x < 0.1) {
+    speed_body.x = 0;
+  }
+
   // Iterate over actuators
   int8_t j;
   for (j = 0; j < INDI_NUM_ACT; j++) {

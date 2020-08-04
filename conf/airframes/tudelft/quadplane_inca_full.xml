@@ -1,11 +1,12 @@
 <!DOCTYPE airframe SYSTEM "../airframe.dtd">
 
-<airframe name="Quadplane lisa_mx_2.1 pwm with XINCA">
+<airframe name="Quadplane lisa_mx_2.1 pwm with INCA on actuators including control surfaces">
 
 	<description>
 		Quadplane:
 		- modified mini-talon with cobra 2814/16 Kv1050 running a 10x8 prop
 		- quad with KISS esc + cobra 2207/2450kv running 6x3 props
+		- This quadplane runs INCA on all actuators except tail its rotor
 	</description>
 
 	<!-- FIRMWARE -->
@@ -16,7 +17,6 @@
 			<!-- MPU6000 is configured to output data at 2kHz, but polled at 512Hz PERIODIC_FREQUENCY -->
 			<module name="radio_control" type="spektrum">
 				<define name="RADIO_MODE"						value="RADIO_GEAR"/>
-				<define name="RADIO_FORWARD_THRUST"				value="RADIO_AUX2"/>
 				<define name="RADIO_KILL_SWITCH"				value="RADIO_AUX1"/>
 				<define name="USE_KILL_SWITCH_FOR_MOTOR_ARMING"	value="1" />
 			</module>
@@ -25,7 +25,6 @@
 		<target name="nps" board="pc">
 			<module name="fdm" type="jsbsim"/>
 			<module name="radio_control" type="datalink"/>
-			<define name="RADIO_FORWARD_THRUST"					value="6"/>
 		</target>
 
 		<module name="actuators" type="pwm">
@@ -41,7 +40,7 @@
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
-		<module name="guidance" type="xinca"/>
+		<module name="guidance" type="indi"/>
 
 		<module name="ahrs" type="int_cmpl_quat">
 			<configure	name="USE_MAGNETOMETER"					value="FALSE"/>
@@ -61,12 +60,7 @@
 		<axis name="PITCH"			failsafe_value="0"/>
 		<axis name="YAW"			failsafe_value="0"/>
 		<axis name="THRUST"			failsafe_value="0"/>
-		<axis name="FORWARD_THRUST"	failsafe_value="0"/>
 	</commands>
-
-	<rc_commands>
-		<set command="FORWARD_THRUST" value="@FORWARD_THRUST"/>
-	</rc_commands>
 
 	<!-- SERVOS -->
 
@@ -75,9 +69,9 @@
 		<servo name="FRONT_RIGHT"		no="1" min="1000" neutral="1100" max="1900"/>
 		<servo name="BACK_RIGHT"		no="2" min="1000" neutral="1100" max="1900"/>
 		<servo name="BACK_LEFT"			no="3" min="1000" neutral="1100" max="1900"/>
-		<servo name="AILERONS"			no="4" min="1000" neutral="1470" max="1900"/>
-		<servo name="RUDDERVATOR_LEFT"	no="5" min="1000" neutral="1500" max="2000"/>
-		<servo name="RUDDERVATOR_RIGHT"	no="6" min="1000" neutral="1470" max="2000"/>
+		<servo name="AILERONS"			no="4" min="1000" neutral="1450" max="1900"/>
+		<servo name="RUDDERVATOR_LEFT"	no="5" min="1000" neutral="1450" max="1900"/>
+		<servo name="RUDDERVATOR_RIGHT"	no="6" min="1000" neutral="1450" max="1900"/>
 		<servo name="FLYMOTOR"			no="7" min="1000" neutral="1100" max="1900"/>
 	</servos>
 
@@ -97,7 +91,7 @@
 		<set servo="RUDDERVATOR_RIGHT"	value="autopilot_get_motors_on() ? actuators_pprz[6] : 0"/>
 		
 		<!-- Tail rotor -->
-		<set servo="FLYMOTOR"			value="autopilot_get_motors_on() ? actuators_pprz[7] : -MAX_PPRZ"/>		
+		<set servo="FLYMOTOR"			value="(autopilot_get_motors_on() && -stateGetPositionNed_f()->z >= 0.3) ? actuators_pprz[7] : -MAX_PPRZ"/>		
 
 	</command_laws>
 
@@ -166,6 +160,28 @@
 
 	</section>
 
+<!-- 	<section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_"> -->
+
+		<!-- Feedback -->
+<!-- 		<define name="PHI_PGAIN"	value="700"/> -->
+<!-- 		<define name="PHI_DGAIN"	value="300"/> -->
+<!-- 		<define name="PHI_IGAIN"	value="0"/> -->
+
+<!-- 		<define name="THETA_PGAIN"	value="700"/> -->
+<!-- 		<define name="THETA_DGAIN"	value="300"/> -->
+<!-- 		<define name="THETA_IGAIN"	value="0"/> -->
+
+<!-- 		<define name="PSI_PGAIN"	value="2200"/> -->
+<!-- 		<define name="PSI_DGAIN"	value="1100"/> -->
+<!-- 		<define name="PSI_IGAIN"	value="0"/> -->
+
+		<!-- Feedforward -->
+<!-- 		<define name="PHI_DDGAIN"	value="300"/> -->
+<!-- 		<define name="THETA_DDGAIN"	value="300"/> -->
+<!-- 		<define name="PSI_DDGAIN"	value="300"/> -->
+		
+<!-- 	</section> -->
+
 	<section name="STABILIZATION_ATTITUDE_INCA" prefix="STABILIZATION_INDI_">
 		
 		<!-- Virtual input and actuator vector dimensions -->
@@ -179,7 +195,7 @@
 		<define name="ACT_IS_SURFACE"			value="{     0,      0,      0,      0,      1,      1,      1  }"/>
 		<define name="ACT_RATE_LIMIT"			value="{  9600,   9600,   9600,   9600,   9600,   9600,   9600  }"/>
 		<define name="ACT_PREF"					value="{     0,      0,      0,      0,      0,      0,      0  }"/>
-		<define name="ACT_PRIORITIES"			value="{     1,      1,      1,      1,     10,     10,     10  }"/>
+		<define name="ACT_PRIORITIES"			value="{    10,     10,     10,     10,      1,      1,      1  }"/>
 		
 		<!-- Control effectiveness -->
 		<define name="G1_ROLL"					value="{  11.0,  -11.0,  -11.0,   11.0,    0.15,   0.0,    0.0  }"/>
@@ -209,7 +225,7 @@
 		<define name="WLS_PRIORITIES"			value="{100, 100, 1, 1000}"/>
 		
 		<!--Run every nth cycle -->
-		<define name="NTH_CYCLE"				value="2.0"/>
+		<define name="NTH_CYCLE"				value="2"/>
 
 	</section>
 
@@ -222,7 +238,7 @@
 	</section>
 
 	<section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-		<define name="MAX_BANK"			value="10" unit="deg"/>
+		<define name="MAX_BANK"			value="20" unit="deg"/>
 		<define name="USE_SPEED_REF"	value="TRUE"/>
 		<define name="PGAIN"			value="50"/>
 		<define name="DGAIN"			value="100"/>
@@ -231,34 +247,10 @@
 	</section>
 
 	<section name="GUIDANCE_INDI" prefix="GUIDANCE_INDI_">
-	    
-		<define name="POS_GAIN"			value="1.0"/>
-		<define name="SPEED_GAIN"		value="3.0"/>
-<!-- 		<define name="SPECIFIC_FORCE_GAIN" value="312.5"/> -->
-<!-- 		<define name="THRUST_DYNAMICS"	value="0.05"/> -->
+		<define name="POS_GAIN"			value="0.6"/>
+		<define name="SPEED_GAIN"		value="2.0"/>
 		<define name="MAX_BANK"			value="10" unit="deg"/>
-		<define name="RC_DEBUG"			value="TRUE"/>
-	</section>
-
-	<section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
-
-	    <define name="OUTPUTS"			value="3"/>
-	    <define name="NUM_ACT"			value="4"/>
-	    <define name="NTH_CYCLE"		value="2.0"/>
-		
-		<define name="ACT_X_TAU"		value="60"/>
-		<define name="ACT_Z_TAU"		value="29"/>
-		<define name="U_PREF"			value="{0,  0,  0,  0}"/>
-		<define name="W_ACC"			value="{10, 10, 1}"/>
-		<define name="W_ACT"			value="{1,  1,  1, 10}"/>
-		<define name="GAMMA"			value="10000"/>
-		
-		<define name="C_L_ALPHA"		value="1.55"/>
-		<define name="C_X_TAIL_ROTOR"	value="2"/>
-		<define name="C_Z_THRUST"		value="-3.2"/>
-		<define name="MASS"				value="3.0"/>
-		<define name="WING_SURFACE"		value="0.24"/>
-		
+		<define name="RC_DEBUG"			value="FALSE"/>
 	</section>
 
 	<section name="NAV">
@@ -289,7 +281,7 @@
 		<define name="MODE_MANUAL"			value="AP_MODE_RC_DIRECT"/>
 		<define name="MODE_AUTO1"			value="AP_MODE_ATTITUDE_DIRECT"/>
 		<define name="MODE_AUTO2"			value="AP_MODE_NAV"/>
-		<define name="NO_RC_THRUST_LIMIT"	value="FALSE"/>
+		<define name="NO_RC_THRUST_LIMIT"	value="TRUE"/>
 	</section>
 
 </airframe>
