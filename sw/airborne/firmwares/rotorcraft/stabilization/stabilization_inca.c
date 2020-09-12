@@ -488,7 +488,7 @@ static void stabilization_indi_calc_cmd(struct Int32Quat *att_err, bool rate_con
 #else
   // Calculate the min and max increments
   for (i = 0; i < INDI_NUM_ACT; i++) {
-    du_min[i] = MAX_PPRZ * act_is_servo[i] - actuator_state_filt_vect[i];
+    du_min[i] = -MAX_PPRZ * act_is_servo[i] - actuator_state_filt_vect[i];
     du_max[i] = MAX_PPRZ - actuator_state_filt_vect[i];
     du_pref[i] = act_pref[i] - actuator_state_filt_vect[i];
   }
