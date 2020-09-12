@@ -1,5 +1,6 @@
 /*
- * Copyright (C) Ewoud Smeur <ewoud_smeur@msn.com>
+ * Original module: Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
+ * Quadplane extension: Copyright (C) 2020 Jan Karssies <hjkarssies@gmail.com>
  * MAVLab Delft University of Technology
  *
  * This file is part of paparazzi.
@@ -24,10 +25,14 @@
  * @brief MAVLab Delft University of Technology
  * This control algorithm is Incremental Nonlinear Dynamic Inversion (INDI)
  *
- * This is an implementation of the publication in the
+ * This original model is an implementation of the publication in the
  * journal of Control Guidance and Dynamics: Adaptive Incremental Nonlinear
  * Dynamic Inversion for Attitude Control of Micro Aerial Vehicles
  * http://arc.aiaa.org/doi/pdf/10.2514/1.G001490
+ *
+ * The adapation is based on the following master thesis:
+ * Extended Nonlinear Control Allocation on the TU Delft Quadplane - H.J. Karssies
+ * http://repository.tudelft.nl/
  */
 
 #include "firmwares/rotorcraft/stabilization/stabilization_inca.h"

@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
+ * Original module: Copyright (C) 2015 Ewoud Smeur <ewoud.smeur@gmail.com>
+ * XINCA extension: Copyright (C) 2020 Jan Karssies <hjkarssies@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -22,7 +23,7 @@
 /**
  * @file firmwares/rotorcraft/guidance/guidance_indi.c
  *
- * A guidance mode based on Incremental Nonlinear Dynamic Inversion
+ * A guidance mode based on Extended Incremental Nonlinear Control Allocation
  *
  * Based on the papers:
  * Cascaded Incremental Nonlinear Dynamic Inversion Control for MAV Disturbance Rejection
@@ -30,6 +31,9 @@
  *
  * Gust Disturbance Alleviation with Incremental Nonlinear Dynamic Inversion
  * https://www.researchgate.net/publication/309212603_Gust_Disturbance_Alleviation_with_Incremental_Nonlinear_Dynamic_Inversion
+ *
+ * Extended Nonlinear Control Allocation on the TU Delft Quadplane - H.J. Karssies
+ * http://repository.tudelft.nl/
  */
 #include "generated/airframe.h"
 #include "firmwares/rotorcraft/guidance/guidance_xinca.h"
@@ -186,11 +190,7 @@ float gamma_sq = 10000;
 #ifdef GUIDANCE_XINCA_H_THRES
 float h_thres = GUIDANCE_XINCA_H_THRES;
 #else
-<<<<<<< HEAD
-float h_thres = 0.5;
-=======
 float h_thres = 0.2;
->>>>>>> f3fff35e63bc05cdcd15d3fbf8fa65e77007e177
 #endif
 
 uint8_t max_iter_xinca = 0;
@@ -403,7 +403,6 @@ void guidance_indi_run(float *heading_sp)
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
 
-<<<<<<< HEAD
   u_xinca[0] = roll_filt.o[0];
   u_xinca[1] = pitch_filt.o[0];
   u_xinca[2] = act_z_filt.o[0];
@@ -414,13 +413,6 @@ void guidance_indi_run(float *heading_sp)
     actuators_pprz[4] = act_x_in;
   } else {
     actuators_pprz[4] = 0;
-=======
-  //Commit tail rotor command
-  if (-stateGetPositionNed_f()->z >= h_thres) {
-    actuators_pprz[7] = act_x_in;
-  } else {
-    actuators_pprz[7] = -MAX_PPRZ;
->>>>>>> f3fff35e63bc05cdcd15d3fbf8fa65e77007e177
   }
   
 }
