@@ -228,7 +228,7 @@
 		<define name="W_ACC"			value="{1, 1, 1}"/>
 		<define name="W_ACT"			value="{10, 10, 10,  1}"/>
 		<define name="GAMMA"			value="10000"/>
-		<define name="H_THRES"			value="0.3"/>
+		<define name="H_THRES"			value="0.2"/>
 		
 		<define name="C_L_ALPHA"		value="1.55"/>
 		<define name="C_X_TAIL_ROTOR"	value="2"/>
