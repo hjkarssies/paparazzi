@@ -341,14 +341,12 @@ void guidance_indi_run(float *heading_sp)
   du_min_xinca[1] = -guidance_indi_max_bank - roll_filt.o[0];
   du_min_xinca[2] = (MAX_PPRZ - act_z_filt.o[0]) / c_z_thrust / XINCA_G_SCALING;
   du_min_xinca[3] = -act_x_filt.o[0] / c_x_tail_rotor / XINCA_G_SCALING;
-  du_min_xinca[3] = -10000;
 
   // Maximum increment in pitch angle, roll angle, thrust and tail rotor input
   du_max_xinca[0] = guidance_indi_max_bank - pitch_filt.o[0];
   du_max_xinca[1] = guidance_indi_max_bank - roll_filt.o[0];
   du_max_xinca[2] = - act_z_filt.o[0] / c_z_thrust / XINCA_G_SCALING;
   du_max_xinca[3] = (MAX_PPRZ - act_x_filt.o[0]) / c_x_tail_rotor / XINCA_G_SCALING;
-  du_max_xinca[3] = 10000;
 
   // Preferred increment in pitch angle, roll angle, thrust and tail rotor input
   du_pref_xinca[0] = u_pref[0] - pitch_filt.o[0];
@@ -377,7 +375,7 @@ void guidance_indi_run(float *heading_sp)
   guidance_euler_cmd.phi = roll_filt.o[0] + du_xinca[1];
   guidance_euler_cmd.psi = *heading_sp;
 
-  //Add increment in thrust and tail rotor input
+  //A dd increment in thrust and tail rotor input
   act_z_in = act_z_filt.o[0] + du_xinca[2] * c_z_thrust * XINCA_G_SCALING;
   Bound(act_z_in, 0, 9600);
 
@@ -391,14 +389,14 @@ void guidance_indi_run(float *heading_sp)
   }
 #endif
 
-  //Overwrite the thrust command from guidance_v
+  // Overwrite the thrust command from guidance_v
   stabilization_cmd[COMMAND_THRUST] = act_z_in;
 
-  //Bound euler angles to prevent flipping
+  // Bound euler angles to prevent flipping
   Bound(guidance_euler_cmd.phi, -guidance_indi_max_bank, guidance_indi_max_bank);
   Bound(guidance_euler_cmd.theta, -guidance_indi_max_bank, guidance_indi_max_bank);
 
-  //set the quat setpoint with the calculated roll and pitch
+  // Set the quat setpoint with the calculated roll and pitch
   struct FloatQuat q_sp;
   float_quat_of_eulers_yxz(&q_sp, &guidance_euler_cmd);
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
@@ -408,11 +406,11 @@ void guidance_indi_run(float *heading_sp)
   u_xinca[2] = act_z_filt.o[0];
   u_xinca[3] = act_x_filt.o[0];
 
-  //Commit tail rotor command
+  // Commit tail rotor command (make sure the actuator number matches)
   if (-stateGetPositionNed_f()->z >= h_thres) {
-    actuators_pprz[4] = act_x_in;
+    actuators_pprz[7] = act_x_in;
   } else {
-    actuators_pprz[4] = 0;
+    actuators_pprz[7] = 0;
   }
   
 }
