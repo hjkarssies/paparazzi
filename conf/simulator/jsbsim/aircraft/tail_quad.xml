@@ -3,10 +3,10 @@
 <fdm_config name="QUAD COMPLETE EXT" version="2.0" release="BETA" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://jsbsim.sourceforge.net/JSBSim.xsd">
 
   <fileheader>
-    <author>Felix Ruess</author>
-    <filecreationdate>20-12-2013</filecreationdate>
-    <version>Version 0.9 - beta</version>
-    <description>Simple Quadrotor 350 in X configuration without rotor dynamic (NE/SW turning CCW, NW/SE CW)</description>
+    <author>Jan Karssies</author>
+    <filecreationdate>26-09-2020</filecreationdate>
+    <version>Version 1 - beta</version>
+    <description>Simple Quadrotor 350 in X configuration with tail rotor without rotor dynamic (NE/SW turning CCW, NW/SE CW)</description>
   </fileheader>
 
   <metrics>

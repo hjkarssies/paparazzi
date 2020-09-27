@@ -137,6 +137,12 @@ float c_x_tail_rotor = GUIDANCE_XINCA_C_X_TAIL_ROTOR;
 float mass = GUIDANCE_XINCA_MASS;
 float wing_surface = GUIDANCE_XINCA_WING_SURFACE;
 
+#ifdef GUIDANCE_XINCA_TAIL_ACT_NO
+int tail_no = GUIDANCE_XINCA_TAIL_ACT_NO;
+#else
+int tail_no = 4;
+#endif
+
 #ifdef GUIDANCE_XINCA_RHO
 float rho = GUIDANCE_XINCA_RHO;
 #else
@@ -247,8 +253,8 @@ void guidance_indi_enter(void)
 
   init_butterworth_2_low_pass(&roll_filt, tau, sample_time, stateGetNedToBodyEulers_f()->phi);
   init_butterworth_2_low_pass(&pitch_filt, tau, sample_time, stateGetNedToBodyEulers_f()->theta);
-  init_butterworth_2_low_pass(&act_z_filt, act_z_tau, sample_time, act_z_in);
-  init_butterworth_2_low_pass(&act_x_filt, act_x_tau, sample_time, act_x_in);
+  init_butterworth_2_low_pass(&act_z_filt, tau, sample_time, act_z_in);
+  init_butterworth_2_low_pass(&act_x_filt, tau, sample_time, act_x_in);
 
 }
 
@@ -375,7 +381,7 @@ void guidance_indi_run(float *heading_sp)
   guidance_euler_cmd.phi = roll_filt.o[0] + du_xinca[1];
   guidance_euler_cmd.psi = *heading_sp;
 
-  //A dd increment in thrust and tail rotor input
+  // Add increment in thrust and tail rotor input
   act_z_in = act_z_filt.o[0] + du_xinca[2] * c_z_thrust * XINCA_G_SCALING;
   Bound(act_z_in, 0, 9600);
 
@@ -408,9 +414,9 @@ void guidance_indi_run(float *heading_sp)
 
   // Commit tail rotor command (make sure the actuator number matches)
   if (-stateGetPositionNed_f()->z >= h_thres) {
-    actuators_pprz[7] = act_x_in;
+    actuators_pprz[tail_no] = act_x_in;
   } else {
-    actuators_pprz[7] = 0;
+    actuators_pprz[tail_no] = 0;
   }
   
 }

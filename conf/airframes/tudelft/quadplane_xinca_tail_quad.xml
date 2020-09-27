@@ -38,6 +38,8 @@
 		<module name="gps" type="datalink"/>
 
 		<module name="stabilization" type="inca">
+			<configure name="INDI_OUTPUTS"		value="4"/>
+			<configure name="INDI_NUM_ACT"		value="4"/>
 			<define name="INDI_RPM_FEEDBACK"	value="FALSE"/>
 		</module>
 
@@ -155,10 +157,6 @@
 
 	<section name="STABILIZATION_ATTITUDE_INCA" prefix="STABILIZATION_INDI_">
 		
-		<!-- Virtual input and actuator vector dimensions -->
-		<define name="INDI_OUTPUTS"				value="4"/>
-		<define name="INDI_NUM_ACT"				value="4"/>
-		
 		<!-- Actuator properties -->
 		<define name="ACT_DYN_TAU"				value="{  29.0,   29.0,   29.0,   29.0  }"/>
 		<define name="ACT_IS_SERVO"				value="{     0,      0,      0,      0  }"/>
@@ -219,14 +217,12 @@
 
 	<section name="GUIDANCE_XINCA" prefix="GUIDANCE_XINCA_">
 
-	    <define name="OUTPUTS"			value="3"/>
-	    <define name="NUM_ACT"			value="4"/>
-		
+	    <define name="TAIL_ACT_NO"		value="4"/>
 		<define name="ACT_X_TAU"		value="60"/>
 		<define name="ACT_Z_TAU"		value="29"/>
-		<define name="U_PREF"			value="{0,  0,  0,  0}"/>
+		<define name="U_PREF"			value="{0, 0, 0, 0}"/>
 		<define name="W_ACC"			value="{1, 1, 1}"/>
-		<define name="W_ACT"			value="{10, 10, 10,  1}"/>
+		<define name="W_ACT"			value="{10, 10, 10, 1}"/>
 		<define name="GAMMA"			value="10000"/>
 		<define name="H_THRES"			value="0.2"/>
 		
@@ -239,6 +235,10 @@
 		<!--Run every nth cycle -->
 	    <define name="NTH_CYCLE"		value="1"/>
 		
+	</section>
+	
+	<section name="MIXING" prefix="MOTOR_MIXING_">
+		<define name="NB_MOTOR" value="5"/>
 	</section>
 
 	<section name="NAV">
